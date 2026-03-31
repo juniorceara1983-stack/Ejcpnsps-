@@ -6,16 +6,17 @@
     <title>EJC - Inscrição</title>
     <style>
         :root { --pnsps-light: #e6e0f3; --ejc-blue: #2563eb; --text: #1e293b; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; margin: 0; padding: 15px; color: var(--text); }
-        .container { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-top: 10px solid var(--pnsps-light); }
+        body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; margin: 0; padding: 15px; color: var(--text); }
+        .container { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); border-top: 10px solid var(--pnsps-light); }
         .header { text-align: center; margin-bottom: 25px; }
         .logo { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--pnsps-light); margin-bottom: 10px; }
         h1 { font-size: 1.3rem; color: var(--ejc-blue); margin: 5px 0; }
         label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.85rem; color: #64748b; }
-        input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; font-size: 1rem; }
+        input { width: 100%; padding: 12px; margin-top: 5px; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; font-size: 1rem; }
         .photo-upload { background: var(--pnsps-light); border: 2px dashed #94a3b8; padding: 20px; text-align: center; border-radius: 15px; cursor: pointer; margin-top: 10px; }
-        #preview { width: 100%; max-height: 250px; border-radius: 10px; margin-top: 10px; object-fit: contain; }
+        #preview { width: 100%; max-height: 200px; border-radius: 10px; margin-top: 10px; object-fit: contain; display: none; }
         .btn-enviar { width: 100%; padding: 16px; background: var(--ejc-blue); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; margin-top: 25px; cursor: pointer; }
+        .loading { display: none; color: var(--ejc-blue); font-weight: bold; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
@@ -23,18 +24,18 @@
         <div class="header">
             <img src="1774975668180.png" alt="Logo EJC" class="logo">
             <h1>PRÉ-FICHA EJC</h1>
-            <p style="font-size: 0.8rem; color: #94a3b8;">Paróquia Nossa Senhora da Penha e São Pedro</p>
+            <p style="font-size: 0.8rem; color: #94a3b8;">PNSPS - Maracanaú</p>
         </div>
 
         <form id="formEJC">
             <label>CPF (Apenas números)</label>
-            <input type="number" id="cpf" required placeholder="00000000000">
+            <input type="number" id="cpf" required>
 
-            <label>Foto do Jovem (Galeria)</label>
+            <label>Foto (Galeria)</label>
             <div class="photo-upload" onclick="document.getElementById('inputFoto').click()">
-                <span id="txtFoto">🖼️ Selecionar da Galeria</span>
+                <span id="txtFoto">🖼️ Selecionar Foto</span>
                 <input type="file" id="inputFoto" accept="image/*" style="display:none" onchange="previewImage(this)">
-                <img id="preview" style="display:none;">
+                <img id="preview">
             </div>
 
             <label>Nome Completo</label>
@@ -42,10 +43,10 @@
 
             <div style="display: flex; gap: 10px;">
                 <div style="flex: 1;"> <label>Idade</label> <input type="number" id="idade"> </div>
-                <div style="flex: 2;"> <label>WhatsApp</label> <input type="tel" id="tel" placeholder="(85)"> </div>
+                <div style="flex: 2;"> <label>WhatsApp</label> <input type="tel" id="tel"> </div>
             </div>
 
-            <label>Nome da Rua / Número</label>
+            <label>Rua e Número</label>
             <input type="text" id="rua">
 
             <div style="display: flex; gap: 10px;">
@@ -53,30 +54,71 @@
                 <div style="flex: 1;"> <label>Cidade</label> <input type="text" id="cidade" value="Maracanaú"> </div>
             </div>
 
-            <button type="button" class="btn-enviar" onclick="enviarFicha()">ENVIAR FICHA</button>
+            <button type="button" class="btn-enviar" id="btnAcao" onclick="enviarParaPlanilha()">ENVIAR INSCRIÇÃO</button>
+            <div id="statusMsg" class="loading">Enviando dados... Aguarde.</div>
         </form>
     </div>
 
     <script>
-        // Função Corrigida e Nativa para carregar a preview da foto
+        let fotoBase64 = "";
+
         function previewImage(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = e => {
                     document.getElementById('preview').src = e.target.result;
                     document.getElementById('preview').style.display = 'block';
-                    document.getElementById('txtFoto').innerText = "Foto carregada! ✅";
-                    document.getElementById('txtFoto').style.color = "#16a34a";
+                    document.getElementById('txtFoto').innerText = "Foto Selecionada ✅";
+                    fotoBase64 = e.target.result; // Salva a imagem para enviar
                 }
                 reader.readAsDataURL(input.files[0]);
             }
         }
 
-        function enviarFicha() { 
-            const cpf = document.getElementById('cpf').value;
-            const nome = document.getElementById('nome').value;
-            if(!cpf || !nome) return alert("Por favor, preencha CPF e Nome.");
-            alert(`Ficha de ${nome} (CPF: ${cpf}) enviada com sucesso! Aguarde o contato da liderança.`); 
+        async function enviarParaPlanilha() {
+            const btn = document.getElementById('btnAcao');
+            const status = document.getElementById('statusMsg');
+            
+            const dados = {
+                cpf: document.getElementById('cpf').value,
+                nome: document.getElementById('nome').value,
+                idade: document.getElementById('idade').value,
+                tel: document.getElementById('tel').value,
+                rua: document.getElementById('rua').value,
+                bairro: document.getElementById('bairro').value,
+                cidade: document.getElementById('cidade').value,
+                foto: fotoBase64 ? "Foto enviada" : "Sem foto"
+            };
+
+            if(!dados.cpf || !dados.nome) return alert("Preencha Nome e CPF!");
+
+            btn.disabled = true;
+            btn.style.background = "#94a3b8";
+            status.style.display = "block";
+
+            try {
+                // SEU LINK DO SCRIPT GOOGLE
+                const url = "https://script.google.com/macros/s/AKfycbywwbyed5hi6iScsnmj8b8gg_TwhbXbmxqf0VnY-9Jhqmc6Uoq7N17rQNdiHfAag3QIoQ/exec";
+                
+                await fetch(url, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+
+                alert("Inscrição de " + dados.nome + " enviada com sucesso!");
+                document.getElementById('formEJC').reset();
+                document.getElementById('preview').style.display = 'none';
+                document.getElementById('txtFoto').innerText = "🖼️ Selecionar Foto";
+            } catch (error) {
+                alert("Erro ao enviar. Tente novamente.");
+            } finally {
+                btn.disabled = false;
+                btn.style.background = "#2563eb";
+                status.style.display = "none";
+            }
         }
     </script>
 </body>
