@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EJC ADM - Gestão</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root { --pnsps-purple-light: #e6e0f3; --ejc-blue: #2563eb; }
+        body { font-family: sans-serif; background: #f1f5f9; padding: 15px; }
+        .logo-adm { width: 80px; border-radius: 50%; margin-bottom: 10px; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .btn { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-pdf { background: var(--ejc-blue); color: white; width: 100%; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+        th { background: #f8fafc; color: #64748b; }
+    </style>
+</head>
+<body>
+
+    <div style="text-align: center;">
+        <img src="1774975668180.png" class="logo-adm">
+        <h3 style="color:var(--ejc-blue)">ADM EJC - MARACANAÚ</h3>
+    </div>
+
+    <div class="card">
+        <button class="btn btn-pdf" onclick="gerarPDFGeral()">📄 GERAR LISTA PARA O PADRE</button>
+        <table>
+            <thead>
+                <tr> <th>Nome</th> <th>Contato</th> <th>Ação</th> </tr>
+            </thead>
+            <tbody id="listaJovens">
+                <tr>
+                    <td>Exemplo de Jovem</td>
+                    <td>(85) 9999-9999</td>
+                    <td><button onclick="gerarFichaUnica('Exemplo de Jovem', '18', 'Rua Exemplo', '(85) 9999-9999', 'Nenhuma')" style="cursor:pointer">PDF</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function gerarPDFGeral() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("EJC PNSPS - Lista Geral de Inscritos", 14, 15);
+            doc.autoTable({
+                startY: 25,
+                head: [['Nome', 'Idade', 'Contato', 'Saúde']],
+                body: [["Exemplo de Jovem", "18", "(85) 9999-9999", "Nenhuma"]],
+                theme: 'grid',
+                headStyles: { fillBox: [37, 99, 235] }
+            });
+            doc.save("Relatorio_Padre_EJC.pdf");
+        }
+
+        function gerarFichaUnica(nome, idade, endereco, contato, saude) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFillColor(37, 99, 235);
+            doc.rect(0, 0, 210, 30, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.text("FICHA DE INSCRIÇÃO - EJC", 105, 20, { align: "center" });
+            doc.setTextColor(0,0,0);
+            doc.text(`Nome: ${nome}`, 20, 50);
+            doc.text(`Idade: ${idade}`, 20, 60);
+            doc.text(`Contato: ${contato}`, 20, 70);
+            doc.text(`Endereço: ${endereco}`, 20, 80);
+            doc.text(`Saúde: ${saude}`, 20, 90);
+            doc.save(`Ficha_${nome}.pdf`);
+        }
+    </script>
+</body>
+</html>
