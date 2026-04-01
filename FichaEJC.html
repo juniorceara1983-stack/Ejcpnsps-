@@ -5,124 +5,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EJC - Inscrição 2026</title>
     <style>
-        :root { --pnsps-light: #e6e0f3; --ejc-blue: #2563eb; --text: #1e293b; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; margin: 0; padding: 15px; color: var(--text); }
-        .container { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); border-top: 10px solid var(--pnsps-light); }
+        :root { --pnsps: #e6e0f3; --ejc: #2563eb; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; margin: 0; padding: 15px; }
+        .container { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); border-top: 10px solid var(--pnsps); }
         .header { text-align: center; margin-bottom: 25px; }
-        .logo { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--pnsps-light); margin-bottom: 10px; }
-        h1 { font-size: 1.3rem; color: var(--ejc-blue); margin: 5px 0; }
+        .logo { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--pnsps); margin-bottom: 10px; }
         label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.85rem; color: #64748b; }
-        input { width: 100%; padding: 12px; margin-top: 5px; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; font-size: 1rem; }
-        .photo-upload { background: var(--pnsps-light); border: 2px dashed #94a3b8; padding: 20px; text-align: center; border-radius: 15px; cursor: pointer; margin-top: 10px; }
-        #preview { width: 100%; max-height: 200px; border-radius: 10px; margin-top: 10px; object-fit: contain; display: none; }
-        .btn-enviar { width: 100%; padding: 16px; background: var(--ejc-blue); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; margin-top: 25px; cursor: pointer; }
-        .loading { display: none; color: var(--ejc-blue); font-weight: bold; margin-top: 10px; text-align: center; }
+        input { width: 100%; padding: 12px; margin-top: 5px; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; }
+        .btn-enviar { width: 100%; padding: 16px; background: var(--ejc); color: white; border: none; border-radius: 12px; font-weight: bold; margin-top: 25px; cursor: pointer; }
+        
+        /* Estilo da Janela de Mensagem (Modal) */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 20px; width: 85%; max-width: 350px; text-align: center; animation: pop 0.3s; }
+        .modal-img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 3px solid var(--ejc); }
+        @keyframes pop { from {transform: scale(0.7);} to {transform: scale(1);} }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <img src="1774975668180.png" alt="Logo EJC" class="logo">
-            <h1>PRÉ-FICHA EJC</h1>
-            <p style="font-size: 0.8rem; color: #94a3b8;">PNSPS - Maracanaú</p>
+            <img src="1774975668180.png" class="logo">
+            <h1 style="font-size:1.3rem; color:var(--ejc)">PRÉ-FICHA EJC</h1>
         </div>
 
         <form id="formEJC">
             <label>Nome Completo</label>
             <input type="text" id="nome" required>
-
             <label>CPF (Apenas números)</label>
             <input type="number" id="cpf" required>
-
-            <label>Foto (Galeria)</label>
-            <div class="photo-upload" onclick="document.getElementById('inputFoto').click()">
-                <span id="txtFoto">🖼️ Selecionar Foto</span>
-                <input type="file" id="inputFoto" accept="image/*" style="display:none" onchange="previewImage(this)">
-                <img id="preview">
-            </div>
-
             <div style="display: flex; gap: 10px;">
                 <div style="flex: 1;"> <label>Data Nasc.</label> <input type="date" id="nascimento" required> </div>
                 <div style="flex: 1;"> <label>WhatsApp</label> <input type="tel" id="telefone" required> </div>
             </div>
-
             <label>Rua e Número</label>
             <input type="text" id="rua">
-
             <div style="display: flex; gap: 10px;">
                 <div style="flex: 1;"> <label>Bairro</label> <input type="text" id="bairro" required> </div>
                 <div style="flex: 1;"> <label>Cidade</label> <input type="text" id="cidade" value="Maracanaú" required> </div>
             </div>
-
             <button type="button" class="btn-enviar" id="btnAcao" onclick="enviarParaPlanilha()">ENVIAR INSCRIÇÃO</button>
-            <div id="statusMsg" class="loading">Validando dados... Aguarde.</div>
         </form>
     </div>
 
+    <div id="meuModal" class="modal">
+        <div class="modal-content">
+            <img src="IMG_20260401_014539.jpg" class="modal-img">
+            <p id="msgTexto" style="font-weight: 500; color: #334155; line-height: 1.4;"></p>
+            <button class="btn-enviar" style="margin-top:15px; padding:10px" onclick="fecharModal()">OK</button>
+        </div>
+    </div>
+
     <script>
-        let fotoBase64 = "";
-        function previewImage(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    document.getElementById('preview').src = e.target.result;
-                    document.getElementById('preview').style.display = 'block';
-                    document.getElementById('txtFoto').innerText = "Foto Selecionada ✅";
-                    fotoBase64 = e.target.result;
-                }
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
+
+        function fecharModal() { document.getElementById('meuModal').style.display = 'none'; location.reload(); }
 
         async function enviarParaPlanilha() {
             const btn = document.getElementById('btnAcao');
-            const status = document.getElementById('statusMsg');
             const cpfDigitado = document.getElementById('cpf').value;
-            const url = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
+            const nomeDigitado = document.getElementById('nome').value;
+            const dataNasc = document.getElementById('nascimento').value;
 
-            if(!cpfDigitado || !document.getElementById('nome').value) return alert("Preencha Nome e CPF!");
+            if(!cpfDigitado || !nomeDigitado || !dataNasc) return alert("Preencha os campos obrigatórios!");
 
-            btn.disabled = true; btn.style.background = "#94a3b8"; status.style.display = "block";
+            btn.innerText = "VALIDANDO..."; btn.disabled = true;
 
             try {
-                // ETAPA 1: VERIFICAR SE CPF JÁ EXISTE
-                const resp = await fetch(url);
-                const listaAtual = await resp.json();
-                const jaExiste = listaAtual.find(item => item.cpf == cpfDigitado);
-                
+                const res = await fetch(URL_SCRIPT);
+                const lista = await res.json();
+                const jaExiste = lista.find(p => p.cpf == cpfDigitado);
+
                 if(jaExiste) {
-                    alert("⚠️ Erro: Este CPF já possui uma inscrição realizada!");
-                    status.style.display = "none";
-                    btn.disabled = false; btn.style.background = "#2563eb";
-                    return; 
+                    document.getElementById('msgTexto').innerText = "Olá tudo bem, esse CPF já tem um registro, por favor fale com a equipe dirigente";
+                    document.getElementById('meuModal').style.display = 'flex';
+                    btn.innerText = "ENVIAR INSCRIÇÃO"; btn.disabled = false;
+                    return;
                 }
 
-                // ETAPA 2: ENVIAR SE NÃO EXISTIR
-                status.innerText = "Enviando inscrição...";
+                // Formata Data DD/MM/AAAA
+                const p = dataNasc.split('-');
+                const dataBR = `${p[2]}/${p[1]}/${p[0]}`;
+
                 const dados = {
-                    nome: document.getElementById('nome').value,
-                    cpf: cpfDigitado,
+                    nome: nomeDigitado, cpf: cpfDigitado, nascimento: dataBR,
                     telefone: document.getElementById('telefone').value,
-                    nascimento: document.getElementById('nascimento').value,
                     rua: document.getElementById('rua').value,
                     bairro: document.getElementById('bairro').value,
                     cidade: document.getElementById('cidade').value,
-                    foto: fotoBase64 ? "Foto enviada" : "Sem foto"
+                    foto: "Salva na planilha"
                 };
 
-                await fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(dados) });
-                
-                alert("Inscrição de " + dados.nome + " enviada com sucesso!");
-                document.getElementById('formEJC').reset();
-                document.getElementById('preview').style.display = 'none';
-                document.getElementById('txtFoto').innerText = "🖼️ Selecionar Foto";
+                await fetch(URL_SCRIPT, { method: 'POST', mode: 'no-cors', body: JSON.stringify(dados) });
 
-            } catch (error) {
-                alert("Erro de conexão. Tente novamente.");
-            } finally {
-                btn.disabled = false; btn.style.background = "#2563eb"; status.style.display = "none";
-                status.innerText = "Validando dados... Aguarde.";
-            }
+                document.getElementById('msgTexto').innerText = "Olá eu sou o Padre Luciano, tudo bem?\nObg pela inscrição, aguarde o contato";
+                document.getElementById('meuModal').style.display = 'flex';
+
+            } catch (e) { alert("Erro de conexão."); btn.disabled = false; }
         }
     </script>
 </body>
