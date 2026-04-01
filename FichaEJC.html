@@ -55,7 +55,7 @@
             </div>
 
             <button type="button" class="btn-enviar" id="btnAcao" onclick="enviarParaPlanilha()">ENVIAR INSCRIÇÃO</button>
-            <div id="statusMsg" class="loading">Enviando dados... Aguarde.</div>
+            <div id="statusMsg" class="loading">Validando dados... Aguarde.</div>
         </form>
     </div>
 
@@ -77,32 +77,51 @@
         async function enviarParaPlanilha() {
             const btn = document.getElementById('btnAcao');
             const status = document.getElementById('statusMsg');
+            const cpfDigitado = document.getElementById('cpf').value;
             const url = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
 
-            const dados = {
-                nome: document.getElementById('nome').value,
-                cpf: document.getElementById('cpf').value,
-                telefone: document.getElementById('telefone').value,
-                nascimento: document.getElementById('nascimento').value,
-                rua: document.getElementById('rua').value,
-                bairro: document.getElementById('bairro').value,
-                cidade: document.getElementById('cidade').value,
-                foto: fotoBase64 ? "Foto enviada" : "Sem foto"
-            };
-
-            if(!dados.cpf || !dados.nome) return alert("Preencha Nome e CPF!");
+            if(!cpfDigitado || !document.getElementById('nome').value) return alert("Preencha Nome e CPF!");
 
             btn.disabled = true; btn.style.background = "#94a3b8"; status.style.display = "block";
 
             try {
+                // ETAPA 1: VERIFICAR SE CPF JÁ EXISTE
+                const resp = await fetch(url);
+                const listaAtual = await resp.json();
+                const jaExiste = listaAtual.find(item => item.cpf == cpfDigitado);
+                
+                if(jaExiste) {
+                    alert("⚠️ Erro: Este CPF já possui uma inscrição realizada!");
+                    status.style.display = "none";
+                    btn.disabled = false; btn.style.background = "#2563eb";
+                    return; 
+                }
+
+                // ETAPA 2: ENVIAR SE NÃO EXISTIR
+                status.innerText = "Enviando inscrição...";
+                const dados = {
+                    nome: document.getElementById('nome').value,
+                    cpf: cpfDigitado,
+                    telefone: document.getElementById('telefone').value,
+                    nascimento: document.getElementById('nascimento').value,
+                    rua: document.getElementById('rua').value,
+                    bairro: document.getElementById('bairro').value,
+                    cidade: document.getElementById('cidade').value,
+                    foto: fotoBase64 ? "Foto enviada" : "Sem foto"
+                };
+
                 await fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(dados) });
+                
                 alert("Inscrição de " + dados.nome + " enviada com sucesso!");
                 document.getElementById('formEJC').reset();
                 document.getElementById('preview').style.display = 'none';
+                document.getElementById('txtFoto').innerText = "🖼️ Selecionar Foto";
+
             } catch (error) {
-                alert("Erro ao enviar.");
+                alert("Erro de conexão. Tente novamente.");
             } finally {
                 btn.disabled = false; btn.style.background = "#2563eb"; status.style.display = "none";
+                status.innerText = "Validando dados... Aguarde.";
             }
         }
     </script>
