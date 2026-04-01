@@ -3,127 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADM EJC - Login</title>
+    <title>ADM EJC - Painel</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #2563eb; --bg: #f1f5f9; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .login-box, .dashboard { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
-        .dashboard { display: none; max-width: 600px; align-self: flex-start; margin-top: 20px; }
-        .logo { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; border: 3px solid var(--primary); }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-blue { background: var(--primary); color: white; }
-        .btn-green { background: #10b981; color: white; }
-        .btn-outline { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
-        .card { background: #fff; border: 1px solid #eee; padding: 15px; border-radius: 15px; margin-top: 10px; text-align: left; position: relative; }
-        .btn-del { position: absolute; right: 10px; top: 10px; color: #ef4444; border: none; background: none; font-size: 1.2rem; }
+        body { font-family: sans-serif; background: #f8fafc; padding: 15px; }
+        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .btn { padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
+        .btn-pdf { background: #2563eb; color: white; }
+        .btn-del { background: #fee2e2; color: #ef4444; width: 40px; }
     </style>
 </head>
 <body>
-
-    <div id="loginPage" class="login-box">
-        <img src="1774975668180.png" class="logo">
-        <h3>Acesso Restrito</h3>
-        <input type="password" id="senha" placeholder="Digite a senha do EJC">
-        <button class="btn btn-blue" onclick="logar()">ENTRAR NO PAINEL</button>
-    </div>
-
-    <div id="dashPage" class="dashboard">
-        <div style="display:flex; justify-content: space-between; align-items: center;">
-            <img src="1774975668180.png" style="width: 40px;">
-            <button class="btn-outline" style="padding: 5px 10px; border-radius: 8px;" onclick="location.reload()">Sair</button>
-        </div>
-        
-        <h2 style="color: var(--primary)">Gestão EJC 2026</h2>
-        
-        <button class="btn btn-green" onclick="pdfGeral()">
-            <i class="fas fa-file-export"></i> BAIXAR PDF COMPLETO
+    <div style="max-width: 500px; margin: auto;">
+        <h2>Inscritos 2026</h2>
+        <button class="btn btn-pdf" onclick="baixarPDFGeral()" style="margin-bottom: 20px;">
+            <i class="fas fa-file-pdf"></i> BAIXAR PDF COMPLETO (TODOS)
         </button>
-        
-        <button class="btn btn-outline" onclick="enviarZap()">
-            <i class="fab fa-whatsapp"></i> ENVIAR PDF PELO WHATSAPP
-        </button>
-
-        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
-        
-        <div id="lista">Carregando inscritos...</div>
+        <div id="lista">Carregando...</div>
     </div>
 
     <script>
         const URL = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
         let inscritos = [];
 
-        function logar() {
-            if(document.getElementById('senha').value === "ejc2026") {
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('dashPage').style.display = 'block';
-                carregar();
-            } else { alert("Senha incorreta!"); }
-        }
-
         async function carregar() {
-            try {
-                const res = await fetch(URL);
-                inscritos = await res.json();
-                render();
-            } catch (e) { alert("Erro ao carregar dados."); }
-        }
-
-        function render() {
+            const res = await fetch(URL);
+            inscritos = await res.json();
             const div = document.getElementById('lista');
-            div.innerHTML = inscritos.length ? "" : "Ninguém inscrito.";
+            div.innerHTML = "";
             inscritos.forEach(p => {
                 div.innerHTML += `
                     <div class="card">
-                        <b>${p.nome}</b>
-                        <span style="font-size: 0.8rem; color: #667">CPF: ${p.cpf}</span>
-                        <div style="display:flex; gap: 10px; margin-top: 10px;">
-                           <button class="btn btn-outline" style="font-size: 0.7rem; padding: 8px;" onclick="pdfIndividual(${p.row})">BAIXAR FICHA</button>
+                        <div style="display:flex; justify-content: space-between;">
+                            <b>${p.nome}</b>
+                            <button class="btn-del" onclick="deletar(${p.row})"><i class="fas fa-trash"></i></button>
                         </div>
-                        <button class="btn-del" onclick="deletar(${p.row}, '${p.nome}')"><i class="fas fa-trash"></i></button>
+                        <p style="font-size:0.8rem; color:#666">CPF: ${p.cpf}</p>
+                        <button class="btn btn-pdf" onclick="baixarIndividual(${p.row})" style="font-size:0.7rem;">BAIXAR FICHA</button>
                     </div>`;
             });
         }
 
-        function pdfIndividual(linha) {
-            const p = inscritos.find(i => i.row == linha);
+        function baixarPDFGeral() {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.text(`FICHA INDIVIDUAL - ${p.nome}`, 20, 20);
-            doc.text(`CPF: ${p.cpf}`, 20, 30);
-            doc.text(`Bairro: ${p.bairro}`, 20, 40);
-            doc.save(`Ficha_${p.nome}.pdf`);
-        }
-
-        function pdfGeral() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.text("RELATÓRIO GERAL DE INSCRITOS - EJC 2026", 14, 15);
+            const doc = new jsPDF('landscape');
+            doc.text("RELATÓRIO COMPLETO EJC 2026", 14, 15);
             
-            const rows = inscritos.map(p => [p.nome, p.cpf, p.bairro]);
-            doc.autoTable({
-                head: [['Nome', 'CPF', 'Bairro']],
-                body: rows,
-                startY: 25
-            });
-            doc.save("Inscritos_EJC_Completo.pdf");
+            // Puxa TODOS os dados da planilha
+            const colunas = ["Nome", "CPF", "Nasc.", "WhatsApp", "Bairro", "Cidade"];
+            const linhas = inscritos.map(p => [p.nome, p.cpf, p.nascimento, p.whatsapp, p.bairro, p.cidade]);
+
+            doc.autoTable({ head: [colunas], body: linhas, startY: 25 });
+            doc.save("Relatorio_Completo_EJC.pdf");
         }
 
-        function enviarZap() {
-            pdfGeral();
-            setTimeout(() => {
-                window.open("https://api.whatsapp.com/send?text=Olá, segue o PDF com a lista completa dos inscritos que acabei de baixar!");
-            }, 2000);
-        }
-
-        async function deletar(linha, nome) {
-            if(!confirm("Excluir " + nome + "?")) return;
-            fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action: "delete", row: linha}) });
+        async function deletar(linha) {
+            if(!confirm("Excluir?")) return;
+            fetch(URL, {method:'POST', mode:'no-cors', body: JSON.stringify({action:"delete", row:linha})});
             alert("Excluído!"); carregar();
         }
+
+        window.onload = carregar;
     </script>
 </body>
 </html>
