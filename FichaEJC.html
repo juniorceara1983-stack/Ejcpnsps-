@@ -30,9 +30,9 @@
         </div>
 
         <form id="formEJC">
-            <label>Sua Foto (Obrigatória)</label>
+            <label>Sua Foto (Estilo 3x4)</label>
             <div class="photo-upload" onclick="document.getElementById('inputFoto').click()">
-                <span id="txtFoto">🖼️ Selecionar Foto</span>
+                <span id="txtFoto">🖼️ Selecionar da Galeria</span>
                 <input type="file" id="inputFoto" accept="image/*" style="display:none" onchange="processarFoto(this)">
                 <center><img id="preview"></center>
             </div>
@@ -79,7 +79,7 @@
                     const img = new Image();
                     img.onload = function() {
                         const canvas = document.createElement('canvas');
-                        // Reduzi para 240x320 para o código da imagem ser menor e não travar a planilha
+                        // Tamanho otimizado para não travar a planilha
                         canvas.width = 240; canvas.height = 320;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, 240, 320);
@@ -98,33 +98,30 @@
             const btn = document.getElementById('btnAcao');
             const nome = document.getElementById('nome').value;
             const cpf = document.getElementById('cpf').value;
-            const zap = document.getElementById('whatsapp').value;
-            
-            if(!nome || !cpf || !zap) return alert("Por favor, preencha os campos obrigatórios!");
-            if(!fotoProntaBase64) return alert("A foto é obrigatória para a ficha!");
 
+            if(!nome || !cpf) return alert("Nome e CPF são obrigatórios!");
+            
             btn.innerText = "ENVIANDO..."; btn.disabled = true;
 
             try {
-                // Conferir CPF Duplicado
+                // Conferir Duplicidade
                 const response = await fetch(SCRIPT_URL);
                 const lista = await response.json();
                 if(lista.find(p => String(p.CPF || p.cpf) === String(cpf))) {
-                    mostrarModal("Este CPF já está inscrito. Fale com a equipe dirigente.");
+                    mostrarModal("Este CPF já possui uma inscrição ativa.");
                     btn.innerText = "ENVIAR INSCRIÇÃO"; btn.disabled = false;
                     return;
                 }
 
-                // Organização exata dos campos para a planilha
                 const dados = {
                     "Nome": nome,
                     "CPF": cpf,
                     "Idade": document.getElementById('nascimento').value,
-                    "whatsapp": zap,
+                    "whatsapp": document.getElementById('whatsapp').value,
                     "Rua": document.getElementById('rua').value,
                     "Bairro": document.getElementById('bairro').value,
                     "Cidade": document.getElementById('cidade').value,
-                    "foto": fotoProntaBase64 // O Script vai mapear isso para 'Foto (link)'
+                    "foto": fotoProntaBase64
                 };
 
                 await fetch(SCRIPT_URL, { 
@@ -133,12 +130,11 @@
                     body: JSON.stringify(dados) 
                 });
 
-                mostrarModal("Olá eu sou o Padre Luciano, tudo bem?\nObrigado pela inscrição, aguarde o contato!");
+                mostrarModal("Olá eu sou o Padre Luciano!\nInscrição recebida com sucesso. Aguarde nosso contato.");
 
             } catch (e) { 
-                alert("Erro ao enviar. Tente novamente."); 
-                btn.innerText = "ENVIAR INSCRIÇÃO";
-                btn.disabled = false; 
+                alert("Erro ao conectar. Tente novamente."); 
+                btn.innerText = "ENVIAR INSCRIÇÃO"; btn.disabled = false;
             }
         }
 
