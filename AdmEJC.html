@@ -13,16 +13,13 @@
         .container { max-width: 900px; margin: auto; }
         .btn { border: none; border-radius: 12px; padding: 16px; font-weight: bold; cursor: pointer; display: block; width: 100%; text-align: center; text-decoration: none; margin-bottom: 15px; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-success { background: #22c55e; color: white; }
         .btn-photo { background: #f59e0b; color: white; padding: 10px; border-radius: 8px; font-size: 0.75rem; }
         .btn-delete { background: #fee2e2; color: var(--danger); padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 45px; margin: 0; }
         .card-jovem { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; }
         #loginPage { max-width: 350px; margin: 100px auto; background: white; padding: 40px; border-radius: 24px; text-align: center; }
         input { width: 100%; padding: 14px; margin: 15px 0; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; }
-        /* Modal para visualizar foto ampliada na tela */
         .modal-foto { display:none; position:fixed; z-index:2000; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); align-items:center; justify-content:center; flex-direction: column; }
         .modal-foto img { max-width: 90%; max-height: 80%; border: 4px solid white; border-radius: 8px; }
-        .loading { text-align: center; padding: 40px; color: var(--accent); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -30,7 +27,7 @@
     <div id="loginPage">
         <img src="1774975668180.png" style="width:80px; border-radius:50%; margin-bottom:15px;">
         <h2>EJC ADM</h2>
-        <input type="password" id="senha" placeholder="Senha do Painel">
+        <input type="password" id="senha" placeholder="Senha">
         <button class="btn btn-primary" onclick="logar()">ENTRAR</button>
     </div>
 
@@ -39,21 +36,16 @@
             <h1 style="font-size:1.5rem;">Inscritos 2026</h1>
             <button onclick="carregarDados()" style="background:none; border:none; cursor:pointer; color:var(--accent)"><i class="fas fa-sync-alt fa-2x"></i></button>
         </div>
-        
-        <button class="btn btn-primary" onclick="gerarRelatorioGeral()">BAIXAR RELATÓRIO PDF (LISTA)</button>
-        
-        <div id="listaContainer">
-            <div class="loading"><i class="fas fa-spinner fa-spin"></i> Sincronizando dados...</div>
-        </div>
+        <button class="btn btn-primary" onclick="gerarRelatorioGeral()">BAIXAR RELATÓRIO PDF</button>
+        <div id="listaContainer">Sincronizando...</div>
     </div>
 
     <div id="modalFoto" class="modal-foto" onclick="this.style.display='none'">
         <img id="imgExpandida" src="">
-        <p style="color:white; margin-top:15px; font-weight:bold;">Toque para fechar</p>
+        <p style="color:white; margin-top:15px;">Toque para fechar</p>
     </div>
 
     <script>
-        // URL DO SEU GOOGLE SCRIPT - MANTENHA ESTA URL
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
         let inscritos = [];
 
@@ -67,165 +59,77 @@
 
         async function carregarDados() {
             const container = document.getElementById('listaContainer');
-            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Atualizando...</div>';
+            container.innerHTML = "Atualizando...";
             try {
                 const res = await fetch(SCRIPT_URL);
                 inscritos = await res.json();
-                renderizarCards();
-            } catch (e) { container.innerHTML = "Erro ao carregar dados da planilha. Verifique a conexão."; }
+                renderizar();
+            } catch (e) { container.innerHTML = "Erro."; }
         }
 
-        // Função de busca inteligente para encontrar os dados na planilha (resolve undefined)
-        function obterDado(obj, chave) {
-            const chaves = Object.keys(obj);
-            const busca = chave.toLowerCase().trim();
-            const encontrada = chaves.find(c => c.toLowerCase().trim().includes(busca));
-            return encontrada ? obj[encontrada] : "---";
+        function obter(obj, chave) {
+            // Busca simplificada: pega o valor exato ou tenta minúscula
+            return obj[chave] || obj[chave.toLowerCase()] || "---";
         }
 
-        function renderizarCards() {
+        function renderizar() {
             const container = document.getElementById('listaContainer');
             container.innerHTML = "";
-            
-            if(inscritos.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:#64748b; margin-top:20px;">Nenhuma inscrição encontrada.</p>';
-                return;
-            }
-
             inscritos.forEach(p => {
-                // Pega o dado da coluna 'Foto (link)'
-                const foto = obterDado(p, 'foto');
-                
-                // Só mostra o botão de ver foto se houver dados Base64 salvos
-                let botaoFoto = (foto && foto.length > 100 && foto.includes('base64')) 
-                    ? `<button class="btn btn-photo" onclick="verFotoNaTela('${p.row}')"><i class="fas fa-id-card"></i> VER FOTO 3x4</button>` 
-                    : `<span style="font-size:0.7rem; color:#94a3b8; font-style:italic;">(Sem foto na planilha)</span>`;
+                const foto = obter(p, 'foto');
+                let botaoFoto = (foto && foto.length > 100) 
+                    ? `<button class="btn btn-photo" onclick="verFoto('${p.row}')"><i class="fas fa-camera"></i> VER FOTO</button>` 
+                    : `<span style="font-size:0.7rem; color:#94a3b8;">(Sem foto)</span>`;
 
                 container.innerHTML += `
                     <div class="card-jovem">
                         <div style="display:flex; justify-content:space-between; align-items:start;">
                             <div>
-                                <b style="text-transform:uppercase; font-size:1.1rem; color:#1e293b;">${obterDado(p, 'nome')}</b>
-                                <p style="font-size:0.85rem; color:#64748b; margin:5px 0;">CPF: ${obterDado(p, 'cpf')} | Bairro: ${obterDado(p, 'bairro')}</p>
+                                <b style="text-transform:uppercase;">${obter(p, 'Nome')}</b>
+                                <p style="font-size:0.85rem; color:#64748b; margin:5px 0;">CPF: ${obter(p, 'CPF')} | Bairro: ${obter(p, 'Bairro')}</p>
                             </div>
-                            <button class="btn btn-delete" onclick="deletarRegistro(${p.row})" title="Excluir inscrição"><i class="fas fa-trash-alt"></i></button>
+                            <button class="btn btn-delete" onclick="deletarRegistro(${p.row})"><i class="fas fa-trash-alt"></i></button>
                         </div>
-                        <div style="display:flex; gap:10px; margin-top:15px; align-items:center; border-top:1px solid #f1f5f9; padding-top:10px;">
-                            <button class="btn btn-primary" style="margin:0; padding:10px; flex:1; font-size:0.75rem;" onclick="gerarFichaIndividual(${p.row})"><i class="fas fa-file-download"></i> BAIXAR FICHA (PDF)</button>
+                        <div style="display:flex; gap:10px; margin-top:10px; align-items:center;">
+                            <button class="btn btn-primary" style="margin:0; padding:10px; flex:1; font-size:0.75rem;" onclick="gerarFicha(${p.row})">BAIXAR FICHA</button>
                             <div style="flex:1; text-align:center;">${botaoFoto}</div>
                         </div>
                     </div>`;
             });
         }
 
-        // Função para visualizar a foto grande na tela do painel
-        function verFotoNaTela(linha) {
-            const p = inscritos.find(i => i.row == linha);
-            const linkFoto = obterDado(p, 'foto');
-            if(linkFoto && linkFoto.length > 100) {
-                document.getElementById('imgExpandida').src = linkFoto;
-                document.getElementById('modalFoto').style.display = 'flex';
-            }
-        }
-
         async function deletarRegistro(linha) {
-            if(!confirm("Tem certeza que deseja apagar esta inscrição permanentemente da planilha?")) return;
-            try {
-                await fetch(SCRIPT_URL, {method:'POST', mode:'no-cors', body:JSON.stringify({action:"delete", row:linha})});
-                alert("Inscrição excluída!"); carregarDados();
-            } catch (e) { alert("Erro ao excluir."); }
+            if(!confirm("Tem certeza que deseja apagar?")) return;
+            await fetch(SCRIPT_URL, {method:'POST', mode:'no-cors', body:JSON.stringify({action:"delete", row:linha})});
+            carregarDados();
         }
 
-        // Gera PDF com a lista de todos os jovens (sem foto)
-        function gerarRelatorioGeral() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('l', 'mm', 'a4');
-            doc.setFontSize(18);
-            doc.text("RELATÓRIO GERAL DE INSCRITOS - EJC 2026", 14, 15);
-            doc.setFontSize(10);
-            doc.text("Paróquia Nossa Senhora do Perpétuo Socorro", 14, 20);
-
-            const cabecalho = [["NOME COMPLETO", "CPF", "NASC./IDADE", "WHATSAPP", "BAIRRO", "CIDADE"]];
-            const linhas = inscritos.map(p => [
-                obterDado(p, 'nome'), obterDado(p, 'cpf'), obterDado(p, 'idade'), 
-                obterDado(p, 'whatsapp'), obterDado(p, 'bairro'), obterDado(p, 'cidade')
-            ]);
-
-            doc.autoTable({ head: cabecalho, body: linhas, startY: 25, styles:{fontSize:9}, headStyles:{fillColor:[30, 41, 59]} });
-            doc.save("Relatorio_Geral_EJC.pdf");
+        function verFoto(linha) {
+            const p = inscritos.find(i => i.row == linha);
+            document.getElementById('imgExpandida').src = obter(p, 'foto');
+            document.getElementById('modalFoto').style.display = 'flex';
         }
 
-        // NOVA FUNÇÃO: Gera PDF da ficha única E ADICIONA A FOTO
-        function gerarFichaIndividual(linha) {
+        function gerarFicha(linha) {
             const p = inscritos.find(i => i.row == linha);
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
-            // Cabeçalho da Ficha
-            doc.setFontSize(20); doc.setFont("helvetica", "bold");
-            doc.text("FICHA DE INSCRIÇÃO INDIVIDUAL", 105, 20, {align: 'center'});
-            doc.setFontSize(12); doc.setFont("helvetica", "normal");
-            doc.text("EJC 2026 - PNSPS Maracanaú", 105, 27, {align: 'center'});
-            doc.line(20, 32, 190, 32); // Linha divisória
+            doc.text("FICHA EJC 2026", 20, 20);
+            const foto = obter(p, 'foto');
+            if(foto && foto.length > 100) doc.addImage(foto, 'JPEG', 150, 30, 35, 45);
+            doc.text("NOME: " + obter(p, 'Nome'), 20, 40);
+            doc.text("CPF: " + obter(p, 'CPF'), 20, 50);
+            doc.text("BAIRRO: " + obter(p, 'Bairro'), 20, 60);
+            doc.save(`Ficha_${obter(p, 'Nome')}.pdf`);
+        }
 
-            // Lógica para adicionar a Foto (Link Base64 da planilha)
-            const fotoBase64 = obterDado(p, 'foto');
-            const possuiFotoValidada = (fotoBase64 && fotoBase64.length > 100 && fotoBase64.includes('base64'));
-
-            if (possuiFotoValidada) {
-                try {
-                    // Adiciona a imagem no canto superior direito (X=150, Y=40, Largura=35, Altura=45)
-                    doc.addImage(fotoBase64, 'JPEG', 150, 40, 35, 45); 
-                } catch (e) { 
-                    // Se der erro ao carregar a foto (formato inválido), desenha o quadrado de erro
-                    doc.setFillColor(240, 240, 240); doc.rect(150, 40, 35, 45, 'F');
-                    doc.setFontSize(8); doc.text("ERRO NA FOTO", 167.5, 62.5, {align:'center'});
-                }
-            } else {
-                // Jovem não enviou foto ou coluna está vazia -> Desenha quadrado cinza de "SEM FOTO"
-                doc.setFillColor(240, 240, 240); // Cor de fundo cinza claro
-                doc.rect(150, 40, 35, 45, 'F'); // X, Y, Largura, Altura, Preenchimento
-                doc.setFontSize(8); doc.setTextColor(150, 150, 150);
-                doc.text("SEM FOTO", 167.5, 62.5, {align: 'center'}); // Centraliza texto no quadrado
-            }
-
-            // Dados Pessoais (Alinhados à esquerda da foto)
-            doc.setTextColor(0); doc.setFontSize(12);
-            let y = 45;
-            const camposEsquerda = [
-                ["NOME COMPLETO:", obterDado(p, 'nome').toUpperCase()],
-                ["CPF:", obterDado(p, 'cpf')],
-                ["NASCIMENTO:", obterDado(p, 'idade')],
-                ["WHATSAPP:", obterDado(p, 'whatsapp')]
-            ];
-
-            camposEsquerda.forEach(d => {
-                doc.setFont("helvetica", "bold"); doc.text(d[0], 20, y);
-                doc.setFont("helvetica", "normal"); doc.text(String(d[1]), 65, y);
-                y += 11;
-            });
-
-            // Dados de Endereço (Abaixo da foto e dados iniciais)
-            y = 90; // Move para baixo da área da foto
-            const camposEndereco = [
-                ["RUA/NÚMERO:", obterDado(p, 'rua')],
-                ["BAIRRO:", obterDado(p, 'bairro')],
-                ["CIDADE:", obterDado(p, 'cidade')]
-            ];
-
-            camposEndereco.forEach(d => {
-                doc.setFont("helvetica", "bold"); doc.text(d[0], 20, y);
-                doc.setFont("helvetica", "normal"); doc.text(String(d[1]), 65, y);
-                y += 11;
-            });
-
-            // Rodapé
-            doc.setFontSize(8); doc.setTextColor(150, 150, 150);
-            doc.text("Documento gerado pelo sistema ADM EJC PNSPS em " + obterDado(p, 'data'), 105, 285, {align:'center'});
-
-            // Nome do arquivo PDF
-            const nomeArquivo = obterDado(p, 'nome').replace(/ /g, "_");
-            doc.save(`Ficha_${nomeArquivo}.pdf`);
+        function gerarRelatorioGeral() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+            doc.text("RELATÓRIO", 14, 15);
+            const linhas = inscritos.map(p => [obter(p, 'Nome'), obter(p, 'CPF'), obter(p, 'whatsapp'), obter(p, 'Bairro')]);
+            doc.autoTable({ head: [["NOME", "CPF", "ZAP", "BAIRRO"]], body: linhas, startY: 25 });
+            doc.save("Relatorio.pdf");
         }
     </script>
 </body>
