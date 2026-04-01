@@ -28,6 +28,9 @@
         </div>
 
         <form id="formEJC">
+            <label>Nome Completo</label>
+            <input type="text" id="nome" required>
+
             <label>CPF (Apenas números)</label>
             <input type="number" id="cpf" required>
 
@@ -38,21 +41,22 @@
                 <img id="preview">
             </div>
 
-            <label>Nome Completo</label>
-            <input type="text" id="nome" required>
-
             <div style="display: flex; gap: 10px;">
-                <div style="flex: 1;"> <label>Idade</label> <input type="number" id="idade"> </div>
-                <div style="flex: 2;"> <label>WhatsApp</label> <input type="tel" id="tel"> </div>
+                <div style="flex: 1;"> 
+                    <label>Data Nasc.</label> 
+                    <input type="date" id="nascimento" required> 
+                </div>
+                <div style="flex: 1;"> 
+                    <label>WhatsApp</label> 
+                    <input type="tel" id="telefone" placeholder="(85) 9..." required> 
+                </div>
             </div>
 
-            <label>Rua e Número</label>
-            <input type="text" id="rua">
+            <label>Bairro</label>
+            <input type="text" id="bairro" required>
 
-            <div style="display: flex; gap: 10px;">
-                <div style="flex: 1;"> <label>Bairro</label> <input type="text" id="bairro"> </div>
-                <div style="flex: 1;"> <label>Cidade</label> <input type="text" id="cidade" value="Maracanaú"> </div>
-            </div>
+            <label>Cidade</label>
+            <input type="text" id="cidade" value="Maracanaú" required>
 
             <button type="button" class="btn-enviar" id="btnAcao" onclick="enviarParaPlanilha()">ENVIAR INSCRIÇÃO</button>
             <div id="statusMsg" class="loading">Enviando dados... Aguarde.</div>
@@ -69,7 +73,7 @@
                     document.getElementById('preview').src = e.target.result;
                     document.getElementById('preview').style.display = 'block';
                     document.getElementById('txtFoto').innerText = "Foto Selecionada ✅";
-                    fotoBase64 = e.target.result; // Salva a imagem para enviar
+                    fotoBase64 = e.target.result;
                 }
                 reader.readAsDataURL(input.files[0]);
             }
@@ -80,11 +84,10 @@
             const status = document.getElementById('statusMsg');
             
             const dados = {
-                cpf: document.getElementById('cpf').value,
                 nome: document.getElementById('nome').value,
-                idade: document.getElementById('idade').value,
-                tel: document.getElementById('tel').value,
-                rua: document.getElementById('rua').value,
+                cpf: document.getElementById('cpf').value,
+                telefone: document.getElementById('telefone').value,
+                nascimento: document.getElementById('nascimento').value,
                 bairro: document.getElementById('bairro').value,
                 cidade: document.getElementById('cidade').value,
                 foto: fotoBase64 ? "Foto enviada" : "Sem foto"
@@ -97,8 +100,8 @@
             status.style.display = "block";
 
             try {
-                // SEU LINK DO SCRIPT GOOGLE
-                const url = "https://script.google.com/macros/s/AKfycbywwbyed5hi6iScsnmj8b8gg_TwhbXbmxqf0VnY-9Jhqmc6Uoq7N17rQNdiHfAag3QIoQ/exec";
+                // LINK ATUALIZADO (VERSÃO 2)
+                const url = "https://script.google.com/macros/s/AKfycbwmFWKWZycXDm14ufINZ8mOhsZKLMmEUE0AD10AD71oi28APVqyps1gzsvKARBBRAQ/exec";
                 
                 await fetch(url, {
                     method: 'POST',
