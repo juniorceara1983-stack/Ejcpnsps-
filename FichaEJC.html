@@ -19,7 +19,6 @@
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 25px; border-radius: 24px; width: 85%; max-width: 340px; text-align: center; }
         .modal-img { width: 130px; height: 130px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 4px solid var(--primary); }
-        /* Estilo da sua assinatura */
         .signature { text-align: center; margin-top: 20px; font-size: 0.75rem; color: #94a3b8; font-weight: 500; letter-spacing: 1px; }
     </style>
 </head>
@@ -75,6 +74,30 @@
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
         let fotoProntaBase64 = "";
+
+        // Lista de mensagens aleatórias para engajamento
+        const mensagensEJC = [
+            "📖 'Ninguém te despreze por seres jovem; mas sê exemplo para os fiéis.' (1 Timóteo 4:12)",
+            "📖 'Tudo posso naquele que me fortalece.' (Filipenses 4:13)",
+            "📖 'O Senhor é o meu pastor, nada me faltará.' (Salmo 23:1)",
+            "📖 'Ide por todo o mundo e pregai o Evangelho a toda criatura.' (Marcos 16:15)",
+            "📖 'Vós sois o sal da terra e a luz do mundo.' (Mateus 5:13-14)",
+            "📖 'Eu sou o caminho, a verdade e a vida.' (João 14:6)",
+            "📖 'Seja forte e corajoso! Não se apavore nem desanime.' (Josué 1:9)",
+            "🙏 Oração: Senhor, fazei de mim um instrumento de vossa paz.",
+            "🙏 Oração: Santo Anjo do Senhor, meu zeloso guardador, iluminai-me!",
+            "🙏 Oração: Maria, passa na frente e guia cada passo do meu encontro.",
+            "✨ Missão: Reze uma Ave-Maria hoje por outro jovem que também se inscreveu.",
+            "✨ Missão: Sorria para alguém hoje e mostre a alegria de ser cristão.",
+            "✨ Missão: Leia o Evangelho de hoje antes de dormir.",
+            "🔥 Engajamento: O EJC é um serviço de amor. Prepare o seu coração!",
+            "🔥 Engajamento: Você não foi escolhido por acaso. Deus tem um plano para você!",
+            "🔥 Engajamento: Ser jovem cristão é ser revolucionário no amor.",
+            "🕊️ 'Onde houver ódio, que eu leve o amor.' (São Francisco de Assis)",
+            "🕊️ 'A medida do amor é amar sem medida.' (Santo Agostinho)",
+            "📖 'Buscai primeiro o Reino de Deus e tudo o mais vos será acrescentado.' (Mateus 6:33)",
+            "📖 'O amor é paciente, o amor é bondoso.' (1 Coríntios 13:4)"
+        ];
 
         function processarFoto(input) {
             if (input.files && input.files[0]) {
@@ -141,7 +164,11 @@
                     body: JSON.stringify(dados) 
                 });
 
-                mostrarModal("Olá! Eu sou o Padre Luciano.\nSua Pré inscrição foi recebida com sucesso! Aguarde o nosso contato.");
+                // Sorteio da frase aleatória
+                const msgAleatoria = mensagensEJC[Math.floor(Math.random() * mensagensEJC.length)];
+
+                // Exibição da mensagem final com a missão/passagem sorteada
+                mostrarModal("Olá! Eu sou o Padre Luciano. que Deus te abençoe.\nSua Pré-inscrição foi recebida com sucesso!\n\nSua missão agora é:\n" + msgAleatoria);
 
             } catch (e) { 
                 console.error(e);
