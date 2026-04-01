@@ -3,123 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Gestão EJC</title>
+    <title>ADM - Gestão EJC</title>
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; --whatsapp: #25d366; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 10px; color: var(--text); }
-        
-        #loginScreen { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; max-width: 320px; margin: 100px auto; }
-        .login-input { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; }
-
-        #dashboard { display: none; width: 100%; max-width: 900px; margin: 0 auto; }
-        
-        .top-bar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 10px; }
-        .btn-group-top { display: flex; flex-direction: column; gap: 8px; }
-
-        .action-box { background: white; padding: 15px; border-radius: 18px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); overflow-x: auto; }
-        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        
-        table { width: 100%; border-collapse: collapse; min-width: 400px; }
-        th { text-align: left; padding: 12px 8px; color: #64748b; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #f1f5f9; }
-        td { padding: 12px 8px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
-
-        .btn { border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.8rem; padding: 10px 14px; transition: 0.2s; }
-        .btn-pdf { background: #fee2e2; color: #dc2626; }
-        .btn-send { background: #dcfce7; color: #16a34a; border: 1px solid #16a34a; }
-        .btn-select { background: #e0e7ff; color: #4338ca; }
-        
-        input[type="checkbox"] { transform: scale(1.3); margin-right: 5px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; padding: 15px; }
+        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .info b { color: #2563eb; display: block; font-size: 1.1rem; }
+        .info span { color: #64748b; font-size: 0.85rem; }
+        .btn-del { background: #fee2e2; color: #ef4444; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-refresh { background: #2563eb; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
-
-    <div id="loginScreen">
-        <img src="1774975668180.png" style="width: 80px; border-radius: 50%;">
-        <h2 style="color:var(--primary)">EJC ADM</h2>
-        <input type="text" id="userLogin" class="login-input" placeholder="Seu Nome">
-        <button class="btn" style="background:var(--primary); color:white; width:100%" onclick="entrar()">ENTRAR</button>
+    <div class="header">
+        <h2>Inscritos 2026</h2>
+        <button class="btn-refresh" onclick="carregar()">🔄 Atualizar</button>
     </div>
-
-    <div id="dashboard">
-        <div class="top-bar">
-            <div>
-                <h2 style="margin:0; font-size: 1.3rem;">Olá, <span id="adminName"></span>!</h2>
-                <small style="color:#64748b">PNSPS - Maracanaú</small>
-            </div>
-            <div class="btn-group-top">
-                <button class="btn btn-pdf" onclick="baixarPDF()">📥 BAIXAR PDF</button>
-                <button class="btn btn-send" onclick="enviarZap()">🟢 ENVIAR ZAP</button>
-            </div>
-        </div>
-
-        <div class="action-box">
-            <div class="table-header">
-                <h4 style="margin:0">Fichas Inscritas</h4>
-                <label style="font-size: 0.8rem; color: var(--primary); font-weight: bold;">
-                    <input type="checkbox" id="selectAll" onclick="toggleAll(this)"> Marcar Todas
-                </label>
-            </div>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th>Sel.</th>
-                        <th>Nome / CPF</th>
-                        <th>Bairro</th>
-                        <th style="text-align: right;">Ação</th>
-                    </tr>
-                </thead>
-                <tbody id="corpoTabela">
-                    <tr>
-                        <td><input type="checkbox" class="jovem-check" data-nome="Marcos Oliveira"></td>
-                        <td><b>Marcos Oliveira</b><br><small>123.456.789-00</small></td>
-                        <td>Pajuçara</td>
-                        <td style="text-align: right;">
-                            <button class="btn btn-select" onclick="alert('Abrindo ficha...')">🔍 SELECIONAR</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+    <div id="lista">Buscando inscritos na planilha...</div>
 
     <script>
-        function entrar() {
-            const user = document.getElementById('userLogin').value;
-            if(user) {
-                document.getElementById('adminName').innerText = user;
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-            }
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
+
+        async function carregar() {
+            const listDiv = document.getElementById('lista');
+            listDiv.innerHTML = "Carregando...";
+            try {
+                const resp = await fetch(URL_SCRIPT);
+                const dados = await resp.json();
+                listDiv.innerHTML = dados.length ? "" : "Nenhum inscrito encontrado.";
+                
+                dados.forEach(p => {
+                    listDiv.innerHTML += `
+                        <div class="card">
+                            <div class="info">
+                                <b>${p.nome}</b>
+                                <span>CPF: ${p.cpf} | Bairro: ${p.bairro}</span>
+                            </div>
+                            <button class="btn-del" onclick="deletar(${p.row}, '${p.nome}')">🗑️</button>
+                        </div>`;
+                });
+            } catch (e) { listDiv.innerHTML = "Erro ao carregar dados."; }
         }
 
-        function toggleAll(source) {
-            const checkboxes = document.querySelectorAll('.jovem-check');
-            checkboxes.forEach(cb => cb.checked = source.checked);
+        async function deletar(linha, nome) {
+            if (!confirm("Tem certeza que deseja excluir a ficha de " + nome + "?")) return;
+            try {
+                await fetch(URL_SCRIPT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ action: "delete", row: linha })
+                });
+                alert("Comando de exclusão enviado! A lista será atualizada.");
+                setTimeout(carregar, 2000); 
+            } catch (e) { alert("Erro ao deletar."); }
         }
 
-        function enviarZap() {
-            const checks = document.querySelectorAll('.jovem-check:checked');
-            let nomes = [];
-            checks.forEach(cb => nomes.push(cb.getAttribute('data-nome')));
-
-            if(nomes.length === 0) {
-                alert("Marque as fichas que deseja enviar!");
-                return;
-            }
-
-            // Cria a mensagem para o Zap
-            const mensagem = encodeURIComponent(`Olá, estou enviando as fichas do EJC Maracanaú (PNSPS) selecionadas:\n\n*Participantes:*\n- ${nomes.join('\n- ')}\n\n_Gerado pelo Sistema ADM EJC_`);
-            
-            // Abre o WhatsApp (pode ser o número do Padre ou abrir a lista de contatos)
-            window.open(`https://wa.me/?text=${mensagem}`, '_blank');
-        }
-
-        function baixarPDF() {
-            const selecionados = document.querySelectorAll('.jovem-check:checked').length;
-            if(selecionados === 0) return alert("Marque as fichas!");
-            alert(`Gerando PDF de ${selecionados} jovem(ns)...`);
-        }
+        window.onload = carregar;
     </script>
 </body>
 </html>
