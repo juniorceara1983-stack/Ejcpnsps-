@@ -11,6 +11,17 @@
         :root { --primary: #1e293b; --accent: #2563eb; --danger: #ef4444; --bg: #f8fafc; --success: #16a34a; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
         .container { max-width: 900px; margin: auto; }
+        
+        /* Estilização do Menu de Bairros */
+        .bairros-section { background: white; padding: 15px; border-radius: 16px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .select-bairro { 
+            width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #e2e8f0; 
+            font-size: 1rem; color: var(--primary); font-weight: 600; cursor: pointer; outline: none;
+            background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'%3E%3C/path%3E%3C/svg%3E") no-repeat right 12px center;
+            appearance: none;
+        }
+        .select-bairro:focus { border-color: var(--accent); }
+
         .btn { border: none; border-radius: 12px; padding: 16px; font-weight: bold; cursor: pointer; display: block; width: 100%; text-align: center; text-decoration: none; margin-bottom: 15px; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-outline { background: white; color: var(--accent); border: 2px solid var(--accent); padding: 10px; margin-bottom: 10px; border-radius: 10px; }
@@ -18,12 +29,8 @@
         .btn-delete { background: #fee2e2; color: var(--danger); padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 45px; margin: 0; }
         
         .card-jovem { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 15px; border-radius: 12px; border-left: 5px solid var(--accent); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        
         #searchBox { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #e2e8f0; margin-bottom: 20px; font-size: 1rem; outline: none; }
-        #searchBox:focus { border-color: var(--accent); }
-
+        
         #loginPage { max-width: 350px; margin: 100px auto; background: white; padding: 40px; border-radius: 24px; text-align: center; }
         input { width: 100%; padding: 14px; margin: 15px 0; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; }
         
@@ -47,8 +54,14 @@
             <button onclick="carregarDados()" style="background:none; border:none; cursor:pointer; color:var(--accent)"><i class="fas fa-sync-alt fa-2x"></i></button>
         </div>
 
-        <h3 style="font-size: 0.9rem; color: #64748b; margin-bottom: 10px;"><i class="fas fa-map-marker-alt"></i> INSCRITOS POR BAIRRO</h3>
-        <div id="statsBairros" class="stats-grid"></div>
+        <div class="bairros-section">
+            <label style="font-size: 0.8rem; color: #64748b; font-weight: bold; display: block; margin-bottom: 8px;">
+                <i class="fas fa-file-download"></i> BAIXAR FICHAS POR BAIRRO
+            </label>
+            <select id="selectBairros" class="select-bairro" onchange="gerarRelatorioBairro(this.value)">
+                <option value="">Selecione um bairro...</option>
+            </select>
+        </div>
 
         <input type="text" id="searchBox" placeholder="🔍 Pesquisar por nome, CPF ou bairro..." onkeyup="renderizar()">
 
@@ -62,6 +75,8 @@
         <div id="listaContainer">Sincronizando...</div>
         
         <div class="signature">By: Jr&Iz</div>
+
+        <div class="signature">Deus abençoe a todos!</div>
     </div>
 
     <div id="modalFoto" class="modal-foto" onclick="this.style.display='none'">
@@ -122,38 +137,77 @@
             renderizar();
         }
 
+        function gerarRelatorioBairro(nomeBairro) {
+            if (!nomeBairro) return;
+            
+            const jovensDoBairro = inscritos.filter(p => obter(p, 'Bairro').toUpperCase().trim() === nomeBairro.toUpperCase());
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            jovensDoBairro.forEach((p, index) => {
+                if (index > 0) doc.addPage();
+                doc.setFontSize(18);
+                doc.text(`FICHA EJC 2026 - BAIRRO: ${nomeBairro}`, 105, 20, { align: "center" });
+                
+                const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
+                if(foto !== FOTO_SEM_PERFIL) {
+                    try { doc.addImage(foto, 'JPEG', 150, 35, 40, 50); } catch(e) {}
+                }
+
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                const campos = [
+                    ["NOME:", obter(p, 'Nome').toUpperCase()],
+                    ["CPF:", obter(p, 'CPF')],
+                    ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))],
+                    ["WHATSAPP:", obter(p, 'whatsapp')],
+                    ["BAIRRO:", obter(p, 'Bairro')],
+                    ["CIDADE:", obter(p, 'Cidade')]
+                ];
+
+                let y = 45;
+                campos.forEach(campo => {
+                    doc.setFont(undefined, 'bold');
+                    doc.text(campo[0], 20, y);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(String(campo[1]), 65, y);
+                    y += 12;
+                });
+            });
+
+            doc.save(`Fichas_EJC_${nomeBairro}.pdf`);
+            document.getElementById('selectBairros').value = ""; // Reseta o select
+        }
+
         function renderizar() {
             const container = document.getElementById('listaContainer');
-            const statsContainer = document.getElementById('statsBairros');
+            const selectBairros = document.getElementById('selectBairros');
             const termo = document.getElementById('searchBox').value.toLowerCase();
             
-            // 1. FILTRAR
+            // 1. ATUALIZAR LISTA DE BAIRROS NO SELECT
+            const bairrosUnicos = [...new Set(inscritos.map(p => obter(p, 'Bairro').toUpperCase().trim()))].sort();
+            const valorAtual = selectBairros.value;
+            selectBairros.innerHTML = '<option value="">Selecione um bairro para download...</option>';
+            bairrosUnicos.forEach(b => {
+                if(b && b !== "---") {
+                    const qtd = inscritos.filter(p => obter(p, 'Bairro').toUpperCase().trim() === b).length;
+                    selectBairros.innerHTML += `<option value="${b}">${b} (${qtd} jovens)</option>`;
+                }
+            });
+            selectBairros.value = valorAtual;
+
+            // 2. FILTRAR E ORDENAR LISTA PARA O DASHBOARD
             let filtrados = inscritos.filter(p => {
                 return obter(p, 'Nome').toLowerCase().includes(termo) || 
                        obter(p, 'CPF').toLowerCase().includes(termo) ||
                        obter(p, 'Bairro').toLowerCase().includes(termo);
             });
 
-            // 2. ORDENAR
             filtrados.sort((a, b) => {
-                if (ordemAtual === 'nome') {
-                    return obter(a, 'Nome').localeCompare(obter(b, 'Nome'));
-                } else {
-                    return calcularIdadeAnos(obter(a, 'Idade')) - calcularIdadeAnos(obter(b, 'Idade'));
-                }
+                if (ordemAtual === 'nome') return obter(a, 'Nome').localeCompare(obter(b, 'Nome'));
+                return calcularIdadeAnos(obter(a, 'Idade')) - calcularIdadeAnos(obter(b, 'Idade'));
             });
 
-            // 3. ATUALIZAR STATUS DE BAIRROS
-            const bairrosCount = {};
-            inscritos.forEach(p => {
-                const b = obter(p, 'Bairro').toUpperCase();
-                bairrosCount[b] = (bairrosCount[b] || 0) + 1;
-            });
-            statsContainer.innerHTML = Object.entries(bairrosCount)
-                .map(([nome, qtd]) => `<div class="stat-card"><b>${nome}</b><br><span style="color:var(--accent)">${qtd} jovens</span></div>`)
-                .join('');
-
-            // 4. RENDERIZAR LISTA
             if (filtrados.length === 0) {
                 container.innerHTML = "<p style='text-align:center; color:#94a3b8;'>Nenhum resultado encontrado.</p>";
                 return;
@@ -162,10 +216,7 @@
             container.innerHTML = "";
             filtrados.forEach(p => {
                 const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
-                
-                let botaoFoto = (foto === FOTO_SEM_PERFIL) 
-                    ? `<span style="font-size:0.7rem; color:#94a3b8;">(SEM FOTO)</span>` 
-                    : `<button class="btn btn-photo" onclick="verFoto('${p.row}')"><i class="fas fa-camera"></i> FOTO</button>`;
+                let botaoFoto = (foto === FOTO_SEM_PERFIL) ? `<span style="font-size:0.7rem; color:#94a3b8;">(SEM FOTO)</span>` : `<button class="btn btn-photo" onclick="verFoto('${p.row}')"><i class="fas fa-camera"></i> FOTO</button>`;
 
                 container.innerHTML += `
                     <div class="card-jovem">
@@ -185,6 +236,7 @@
             });
         }
 
+        // Funções de verFoto, deletarRegistro, gerarFicha e gerarRelatorioGeral seguem iguais...
         function verFoto(linha) {
             const p = inscritos.find(i => i.row == linha);
             const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
@@ -204,27 +256,17 @@
             const doc = new jsPDF();
             doc.setFontSize(18);
             doc.text("FICHA INDIVIDUAL - EJC 2026", 105, 20, { align: "center" });
-            
             const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
-            if(foto !== FOTO_SEM_PERFIL) doc.addImage(foto, 'JPEG', 150, 35, 40, 50);
-
+            if(foto !== FOTO_SEM_PERFIL) {
+                try { doc.addImage(foto, 'JPEG', 150, 35, 40, 50); } catch(e) {}
+            }
             doc.setFontSize(12);
             doc.setFont(undefined, 'bold');
-            const campos = [
-                ["NOME:", obter(p, 'Nome')],
-                ["CPF:", obter(p, 'CPF')],
-                ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))],
-                ["WHATSAPP:", obter(p, 'whatsapp')],
-                ["BAIRRO:", obter(p, 'Bairro')],
-                ["CIDADE:", obter(p, 'Cidade')]
-            ];
-
+            const campos = [ ["NOME:", obter(p, 'Nome')], ["CPF:", obter(p, 'CPF')], ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))], ["WHATSAPP:", obter(p, 'whatsapp')], ["BAIRRO:", obter(p, 'Bairro')], ["CIDADE:", obter(p, 'Cidade')] ];
             let y = 45;
             campos.forEach(campo => {
-                doc.text(campo[0], 20, y);
-                doc.setFont(undefined, 'normal');
-                doc.text(String(campo[1]), 65, y);
-                doc.setFont(undefined, 'bold');
+                doc.setFont(undefined, 'bold'); doc.text(campo[0], 20, y);
+                doc.setFont(undefined, 'normal'); doc.text(String(campo[1]), 65, y);
                 y += 12;
             });
             doc.save(`Ficha_${obter(p, 'Nome')}.pdf`);
@@ -234,19 +276,8 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'mm', 'a4');
             doc.text("RELATÓRIO GERAL EJC 2026", 14, 15);
-            const linhas = inscritos.map(p => [
-                obter(p, 'Nome'), 
-                obter(p, 'CPF'), 
-                formatarIdadeCompleta(obter(p, 'Idade')), 
-                obter(p, 'whatsapp'), 
-                obter(p, 'Bairro')
-            ]);
-            doc.autoTable({ 
-                head: [["NOME", "CPF", "IDADE", "ZAP", "BAIRRO"]], 
-                body: linhas, 
-                startY: 25,
-                headStyles: { fillColor: [30, 41, 59] }
-            });
+            const linhas = inscritos.map(p => [ obter(p, 'Nome'), obter(p, 'CPF'), formatarIdadeCompleta(obter(p, 'Idade')), obter(p, 'whatsapp'), obter(p, 'Bairro') ]);
+            doc.autoTable({ head: [["NOME", "CPF", "IDADE", "ZAP", "BAIRRO"]], body: linhas, startY: 25, headStyles: { fillColor: [30, 41, 59] } });
             doc.save("Relatorio_EJC_2026.pdf");
         }
     </script>
