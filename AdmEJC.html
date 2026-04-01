@@ -3,59 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADM - Gestão EJC</title>
+    <title>ADM - EJC 2026</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; padding: 15px; }
-        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .info b { color: #2563eb; display: block; font-size: 1.1rem; }
-        .info span { color: #64748b; font-size: 0.85rem; }
-        .btn-del { background: #fee2e2; color: #ef4444; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-refresh { background: #2563eb; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; }
+        :root { --primary: #2563eb; --danger: #ef4444; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        .header { max-width: 600px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: center; }
+        .card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .card b { color: var(--primary); font-size: 1.1rem; display: block; text-transform: uppercase; }
+        .card span { font-size: 0.85rem; color: #64748b; display: block; margin: 2px 0; }
+        .actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+        .btn { flex: 1; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.8rem; }
+        .btn-pdf { background: #e0e7ff; color: #4338ca; }
+        .btn-del { background: #fee2e2; color: var(--danger); width: 50px; flex: none; }
+        .btn-refresh { background: var(--primary); color: white; border-radius: 10px; width: 45px; height: 45px; border: none; }
     </style>
 </head>
 <body>
+
     <div class="header">
-        <h2>Inscritos 2026</h2>
-        <button class="btn-refresh" onclick="carregar()">🔄 Atualizar</button>
+        <h2 style="margin:0; color: #1e293b;">Inscritos</h2>
+        <button class="btn-refresh" onclick="carregar()"><i class="fas fa-sync-alt"></i></button>
     </div>
-    <div id="lista">Buscando inscritos na planilha...</div>
+
+    <div id="lista" style="max-width:600px; margin:auto;">Carregando...</div>
 
     <script>
-        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
+        const URL = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
+        let dadosLocais = [];
 
         async function carregar() {
-            const listDiv = document.getElementById('lista');
-            listDiv.innerHTML = "Carregando...";
+            const div = document.getElementById('lista');
+            div.innerHTML = '<p style="text-align:center">Buscando na planilha...</p>';
             try {
-                const resp = await fetch(URL_SCRIPT);
-                const dados = await resp.json();
-                listDiv.innerHTML = dados.length ? "" : "Nenhum inscrito encontrado.";
-                
-                dados.forEach(p => {
-                    listDiv.innerHTML += `
+                const res = await fetch(URL);
+                dadosLocais = await res.json();
+                div.innerHTML = "";
+                dadosLocais.forEach(p => {
+                    div.innerHTML += `
                         <div class="card">
-                            <div class="info">
-                                <b>${p.nome}</b>
-                                <span>CPF: ${p.cpf} | Bairro: ${p.bairro}</span>
+                            <b>${p.nome}</b>
+                            <span><i class="fas fa-id-card"></i> CPF: ${p.cpf}</span>
+                            <span><i class="fas fa-map-marker-alt"></i> Bairro: ${p.bairro}</span>
+                            <div class="actions">
+                                <button class="btn btn-pdf" onclick="baixarPDF(${p.row})">
+                                    <i class="fas fa-file-pdf"></i> BAIXAR FICHA
+                                </button>
+                                <button class="btn btn-del" onclick="deletar(${p.row}, '${p.nome}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
-                            <button class="btn-del" onclick="deletar(${p.row}, '${p.nome}')">🗑️</button>
                         </div>`;
                 });
-            } catch (e) { listDiv.innerHTML = "Erro ao carregar dados."; }
+            } catch (e) { div.innerHTML = "Erro ao carregar dados."; }
+        }
+
+        function baixarPDF(linha) {
+            const p = dadosLocais.find(i => i.row == linha);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho azul
+            doc.setFillColor(37, 99, 235);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text("FICHA EJC 2026", 20, 25);
+
+            // Conteúdo
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(14);
+            doc.text("DADOS DO INSCRITO:", 20, 55);
+            
+            doc.setFontSize(12);
+            let y = 70;
+            const campos = [
+                ["NOME:", p.nome.toUpperCase()],
+                ["CPF:", p.cpf],
+                ["BAIRRO:", p.bairro],
+                ["DATA REF:", p.data || "Ver na planilha"]
+            ];
+
+            campos.forEach(c => {
+                doc.setFont("helvetica", "bold");
+                doc.text(c[0], 20, y);
+                doc.setFont("helvetica", "normal");
+                doc.text(String(c[1]), 50, y);
+                y += 12;
+            });
+
+            doc.save(`Ficha_${p.nome}.pdf`);
         }
 
         async function deletar(linha, nome) {
-            if (!confirm("Tem certeza que deseja excluir a ficha de " + nome + "?")) return;
-            try {
-                await fetch(URL_SCRIPT, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({ action: "delete", row: linha })
-                });
-                alert("Comando de exclusão enviado! A lista será atualizada.");
-                setTimeout(carregar, 2000); 
-            } catch (e) { alert("Erro ao deletar."); }
+            if(!confirm("Excluir " + nome + "?")) return;
+            fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action: "delete", row: linha}) });
+            alert("Enviado! Aguarde 2 segundos e atualize.");
         }
 
         window.onload = carregar;
