@@ -8,18 +8,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #1e293b; --accent: #2563eb; --danger: #ef4444; --bg: #f8fafc; }
+        :root { --primary: #1e293b; --accent: #2563eb; --danger: #ef4444; --bg: #f8fafc; --success: #16a34a; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
         .container { max-width: 900px; margin: auto; }
         .btn { border: none; border-radius: 12px; padding: 16px; font-weight: bold; cursor: pointer; display: block; width: 100%; text-align: center; text-decoration: none; margin-bottom: 15px; }
         .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: white; color: var(--accent); border: 2px solid var(--accent); padding: 10px; margin-bottom: 10px; border-radius: 10px; }
         .btn-photo { background: #f59e0b; color: white; padding: 10px; border-radius: 8px; font-size: 0.75rem; }
         .btn-delete { background: #fee2e2; color: var(--danger); padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 45px; margin: 0; }
+        
         .card-jovem { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 12px; border-left: 5px solid var(--accent); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        #searchBox { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #e2e8f0; margin-bottom: 20px; font-size: 1rem; outline: none; }
+        #searchBox:focus { border-color: var(--accent); }
+
         #loginPage { max-width: 350px; margin: 100px auto; background: white; padding: 40px; border-radius: 24px; text-align: center; }
         input { width: 100%; padding: 14px; margin: 15px 0; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; }
+        
         .modal-foto { display:none; position:fixed; z-index:2000; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); align-items:center; justify-content:center; flex-direction: column; }
         .modal-foto img { max-width: 90%; max-height: 80%; border: 4px solid white; border-radius: 8px; }
+        .signature { text-align: center; padding: 20px; color: #94a3b8; font-size: 0.8rem; font-weight: bold; letter-spacing: 1px; }
     </style>
 </head>
 <body>
@@ -32,12 +42,26 @@
     </div>
 
     <div id="dashPage" style="display:none;" class="container">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-            <h1 style="font-size:1.5rem;">Inscritos 2026</h1>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h1 style="font-size:1.5rem;">Gestão EJC 2026</h1>
             <button onclick="carregarDados()" style="background:none; border:none; cursor:pointer; color:var(--accent)"><i class="fas fa-sync-alt fa-2x"></i></button>
         </div>
-        <button class="btn btn-primary" onclick="gerarRelatorioGeral()">BAIXAR RELATÓRIO GERAL</button>
+
+        <h3 style="font-size: 0.9rem; color: #64748b; margin-bottom: 10px;"><i class="fas fa-map-marker-alt"></i> INSCRITOS POR BAIRRO</h3>
+        <div id="statsBairros" class="stats-grid"></div>
+
+        <input type="text" id="searchBox" placeholder="🔍 Pesquisar por nome, CPF ou bairro..." onkeyup="renderizar()">
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="btn-outline" style="flex:1" onclick="ordenar('nome')"><i class="fas fa-sort-alpha-down"></i> Nome</button>
+            <button class="btn-outline" style="flex:1" onclick="ordenar('idade')"><i class="fas fa-sort-numeric-down"></i> Idade</button>
+        </div>
+
+        <button class="btn btn-primary" onclick="gerarRelatorioGeral()">BAIXAR RELATÓRIO GERAL (PDF)</button>
+        
         <div id="listaContainer">Sincronizando...</div>
+        
+        <div class="signature">By: Jr&Iz</div>
     </div>
 
     <div id="modalFoto" class="modal-foto" onclick="this.style.display='none'">
@@ -49,6 +73,7 @@
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
         const FOTO_SEM_PERFIL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACOAQMAAAC2d5YjAAAAA1BMVEXm5uY2W5X3AAAAG0lEQVRIiWNgGAWjYBSMglEwCkbBKBgF9AMAAAYAAZtUq70AAAAASUVORK5CYII=";
         let inscritos = [];
+        let ordemAtual = 'nome';
 
         function logar() {
             if(document.getElementById('senha').value === "ejc2026") {
@@ -60,7 +85,7 @@
 
         async function carregarDados() {
             const container = document.getElementById('listaContainer');
-            container.innerHTML = "Atualizando...";
+            container.innerHTML = "Atualizando dados...";
             try {
                 const res = await fetch(SCRIPT_URL);
                 inscritos = await res.json();
@@ -74,60 +99,86 @@
             return chaveEncontrada ? obj[chaveEncontrada] : "---";
         }
 
-        // --- FUNÇÃO PARA CALCULAR IDADE ---
-        function formatarIdadeCompleta(dataNasc) {
-            if (!dataNasc || dataNasc === "---") return "---";
+        function calcularIdadeAnos(dataNasc) {
+            if (!dataNasc || dataNasc === "---") return 999;
             const hoje = new Date();
             const nascimento = new Date(dataNasc);
-            
-            if (isNaN(nascimento)) return dataNasc; // Se não for data válida, retorna o texto original
-
+            if (isNaN(nascimento)) return 999;
             let idade = hoje.getFullYear() - nascimento.getFullYear();
             const m = hoje.getMonth() - nascimento.getMonth();
-            if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate())) {
-                idade--;
-            }
-
-            // Formata a data para padrão BR (DD/MM/AAAA)
-            const dia = String(nascimento.getDate()).padStart(2, '0');
-            const mes = String(nascimento.getMonth() + 1).padStart(2, '0');
-            const ano = nascimento.getFullYear();
-
-            return `${idade} anos (${dia}/${mes}/${ano})`;
+            if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate())) idade--;
+            return idade;
         }
 
-        function validarFoto(p) {
-            const fotoLink = obter(p, 'foto (link)');
-            return (fotoLink && fotoLink.length > 50) ? fotoLink : FOTO_SEM_PERFIL;
+        function formatarIdadeCompleta(dataNasc) {
+            const idade = calcularIdadeAnos(dataNasc);
+            if (idade === 999) return "---";
+            const d = new Date(dataNasc);
+            return `${idade} anos (${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()})`;
+        }
+
+        function ordenar(tipo) {
+            ordemAtual = tipo;
+            renderizar();
         }
 
         function renderizar() {
             const container = document.getElementById('listaContainer');
-            if (inscritos.length === 0) {
-                container.innerHTML = "<p style='text-align:center; color:#94a3b8;'>Nenhuma inscrição encontrada.</p>";
+            const statsContainer = document.getElementById('statsBairros');
+            const termo = document.getElementById('searchBox').value.toLowerCase();
+            
+            // 1. FILTRAR
+            let filtrados = inscritos.filter(p => {
+                return obter(p, 'Nome').toLowerCase().includes(termo) || 
+                       obter(p, 'CPF').toLowerCase().includes(termo) ||
+                       obter(p, 'Bairro').toLowerCase().includes(termo);
+            });
+
+            // 2. ORDENAR
+            filtrados.sort((a, b) => {
+                if (ordemAtual === 'nome') {
+                    return obter(a, 'Nome').localeCompare(obter(b, 'Nome'));
+                } else {
+                    return calcularIdadeAnos(obter(a, 'Idade')) - calcularIdadeAnos(obter(b, 'Idade'));
+                }
+            });
+
+            // 3. ATUALIZAR STATUS DE BAIRROS
+            const bairrosCount = {};
+            inscritos.forEach(p => {
+                const b = obter(p, 'Bairro').toUpperCase();
+                bairrosCount[b] = (bairrosCount[b] || 0) + 1;
+            });
+            statsContainer.innerHTML = Object.entries(bairrosCount)
+                .map(([nome, qtd]) => `<div class="stat-card"><b>${nome}</b><br><span style="color:var(--accent)">${qtd} jovens</span></div>`)
+                .join('');
+
+            // 4. RENDERIZAR LISTA
+            if (filtrados.length === 0) {
+                container.innerHTML = "<p style='text-align:center; color:#94a3b8;'>Nenhum resultado encontrado.</p>";
                 return;
             }
-            container.innerHTML = "";
-            inscritos.forEach(p => {
-                const foto = validarFoto(p);
-                const infoIdade = formatarIdadeCompleta(obter(p, 'Idade'));
 
+            container.innerHTML = "";
+            filtrados.forEach(p => {
+                const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
+                
                 let botaoFoto = (foto === FOTO_SEM_PERFIL) 
                     ? `<span style="font-size:0.7rem; color:#94a3b8;">(SEM FOTO)</span>` 
-                    : `<button class="btn btn-photo" onclick="verFoto('${p.row}')"><i class="fas fa-camera"></i> VER FOTO</button>`;
+                    : `<button class="btn btn-photo" onclick="verFoto('${p.row}')"><i class="fas fa-camera"></i> FOTO</button>`;
 
                 container.innerHTML += `
                     <div class="card-jovem">
                         <div style="display:flex; justify-content:space-between; align-items:start;">
                             <div>
-                                <b style="text-transform:uppercase;">${obter(p, 'Nome')}</b>
-                                <p style="font-size:0.85rem; color:#64748b; margin:5px 0;">CPF: ${obter(p, 'CPF')} | Bairro: ${obter(p, 'Bairro')}</p>
-                                <p style="font-size:0.8rem; color:var(--accent); font-weight:600;">${infoIdade}</p>
+                                <b style="text-transform:uppercase; color:var(--primary);">${obter(p, 'Nome')}</b>
+                                <p style="font-size:0.85rem; color:#64748b; margin:5px 0;">CPF: ${obter(p, 'CPF')} | <b>${obter(p, 'Bairro')}</b></p>
+                                <p style="font-size:0.8rem; color:var(--accent); font-weight:600;">${formatarIdadeCompleta(obter(p, 'Idade'))}</p>
                             </div>
                             <button class="btn btn-delete" onclick="deletarRegistro(${p.row})"><i class="fas fa-trash-alt"></i></button>
                         </div>
                         <div style="display:flex; gap:10px; margin-top:10px; align-items:center;">
-                            <button class="btn btn-primary" style="margin:0; padding:10px; flex:1; font-size:0.75rem;" onclick="gerarFicha(${p.row})">BAIXAR FICHA PDF</button>
+                            <button class="btn btn-primary" style="margin:0; padding:10px; flex:1; font-size:0.75rem;" onclick="gerarFicha(${p.row})">FICHA PDF</button>
                             <div style="flex:1; text-align:center;">${botaoFoto}</div>
                         </div>
                     </div>`;
@@ -136,12 +187,13 @@
 
         function verFoto(linha) {
             const p = inscritos.find(i => i.row == linha);
-            document.getElementById('imgExpandida').src = validarFoto(p);
+            const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
+            document.getElementById('imgExpandida').src = foto;
             document.getElementById('modalFoto').style.display = 'flex';
         }
 
         async function deletarRegistro(linha) {
-            if(!confirm("Tem certeza que deseja apagar?")) return;
+            if(!confirm("Deseja mesmo apagar este inscrito?")) return;
             await fetch(SCRIPT_URL, {method:'POST', mode:'no-cors', body:JSON.stringify({action:"delete", row:linha})});
             carregarDados();
         }
@@ -150,19 +202,11 @@
             const p = inscritos.find(i => i.row == linha);
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
             doc.setFontSize(18);
             doc.text("FICHA INDIVIDUAL - EJC 2026", 105, 20, { align: "center" });
             
-            const foto = validarFoto(p);
-            if(foto === FOTO_SEM_PERFIL) {
-                doc.setFillColor(230, 230, 230);
-                doc.rect(150, 35, 40, 50, 'F');
-                doc.setFontSize(10);
-                doc.text("SEM FOTO", 170, 60, { align: "center" });
-            } else {
-                doc.addImage(foto, 'JPEG', 150, 35, 40, 50);
-            }
+            const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
+            if(foto !== FOTO_SEM_PERFIL) doc.addImage(foto, 'JPEG', 150, 35, 40, 50);
 
             doc.setFontSize(12);
             doc.setFont(undefined, 'bold');
@@ -171,7 +215,6 @@
                 ["CPF:", obter(p, 'CPF')],
                 ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))],
                 ["WHATSAPP:", obter(p, 'whatsapp')],
-                ["RUA:", obter(p, 'Rua')],
                 ["BAIRRO:", obter(p, 'Bairro')],
                 ["CIDADE:", obter(p, 'Cidade')]
             ];
@@ -184,7 +227,6 @@
                 doc.setFont(undefined, 'bold');
                 y += 12;
             });
-
             doc.save(`Ficha_${obter(p, 'Nome')}.pdf`);
         }
 
@@ -200,13 +242,12 @@
                 obter(p, 'Bairro')
             ]);
             doc.autoTable({ 
-                head: [["NOME", "CPF", "IDADE (NASC)", "ZAP", "BAIRRO"]], 
+                head: [["NOME", "CPF", "IDADE", "ZAP", "BAIRRO"]], 
                 body: linhas, 
                 startY: 25,
-                theme: 'striped',
                 headStyles: { fillColor: [30, 41, 59] }
             });
-            doc.save("Relatorio_Geral.pdf");
+            doc.save("Relatorio_EJC_2026.pdf");
         }
     </script>
 </body>
