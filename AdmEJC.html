@@ -3,69 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADM EJC - Painel</title>
+    <title>ADM EJC - PNSPS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        body { font-family: sans-serif; background: #f8fafc; padding: 15px; }
-        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .btn { padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
-        .btn-pdf { background: #2563eb; color: white; }
-        .btn-del { background: #fee2e2; color: #ef4444; width: 40px; }
+        :root { --primary: #2563eb; --bg: #f8fafc; --white: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        
+        /* Tela de Login */
+        #loginPage { background: var(--white); padding: 40px 30px; border-radius: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); width: 90%; max-width: 380px; text-align: center; }
+        .logo-login { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #eef2ff; margin-bottom: 20px; }
+        input { width: 100%; padding: 14px; margin: 15px 0; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; font-size: 1rem; }
+        
+        /* Dashboard Principal */
+        #dashPage { display: none; width: 100%; max-width: 700px; padding: 20px; align-self: flex-start; }
+        .header-dash { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: var(--white); padding: 15px 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        
+        /* Botões */
+        .btn { border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-login { background: var(--primary); color: white; width: 100%; padding: 15px; }
+        .btn-geral { background: #1e293b; color: white; width: 100%; padding: 18px; margin-bottom: 15px; font-size: 1rem; }
+        .btn-zap { background: #22c55e; color: white; width: 100%; padding: 18px; margin-bottom: 25px; font-size: 1rem; }
+        .btn-fichinha { background: #eff6ff; color: var(--primary); padding: 8px 15px; font-size: 0.8rem; flex: 1; }
+        .btn-lixo { background: #fef2f2; color: #ef4444; width: 45px; height: 40px; }
+
+        /* Cards de Inscritos */
+        .card-jovem { background: var(--white); border-radius: 16px; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .card-header b { font-size: 1.1rem; color: #1e293b; text-transform: uppercase; }
+        .card-actions { display: flex; gap: 10px; border-top: 1px solid #f1f5f9; padding-top: 12px; }
+        
+        .badge-cpf { background: #f1f5f9; color: #64748b; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+        .loading { text-align: center; color: var(--primary); font-weight: bold; padding: 20px; }
     </style>
 </head>
 <body>
-    <div style="max-width: 500px; margin: auto;">
-        <h2>Inscritos 2026</h2>
-        <button class="btn btn-pdf" onclick="baixarPDFGeral()" style="margin-bottom: 20px;">
-            <i class="fas fa-file-pdf"></i> BAIXAR PDF COMPLETO (TODOS)
+
+    <div id="loginPage">
+        <img src="1774975668180.png" class="logo-login">
+        <h2 style="margin:0; color:#1e293b">EJC ADM</h2>
+        <p style="color:#64748b; font-size:0.9rem">Digite a senha para acessar</p>
+        <input type="password" id="pass" placeholder="Senha do Painel">
+        <button class="btn btn-login" onclick="logar()">ENTRAR</button>
+    </div>
+
+    <div id="dashPage">
+        <div class="header-dash">
+            <img src="1774975668180.png" style="width: 45px; border-radius: 50%;">
+            <div style="text-align: right;">
+                <span style="display:block; font-weight:bold; color:var(--primary)">PNSPS</span>
+                <span style="font-size:0.8rem; color:#64748b">Inscritos 2026</span>
+            </div>
+        </div>
+
+        <button class="btn btn-geral" onclick="gerarPdfGeral()">
+            <i class="fas fa-file-pdf"></i> BAIXAR RELATÓRIO COMPLETO
         </button>
-        <div id="lista">Carregando...</div>
+
+        <button class="btn btn-zap" onclick="compartilharZap()">
+            <i class="fab fa-whatsapp"></i> COMPARTILHAR PDF
+        </button>
+
+        <div id="listaContainer">
+            <div class="loading"><i class="fas fa-circle-notch fa-spin"></i> Sincronizando com Google Sheets...</div>
+        </div>
     </div>
 
     <script>
-        const URL = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
         let inscritos = [];
 
-        async function carregar() {
-            const res = await fetch(URL);
-            inscritos = await res.json();
-            const div = document.getElementById('lista');
-            div.innerHTML = "";
+        function logar() {
+            // Senha padrão: ejc2026
+            if(document.getElementById('pass').value === "ejc2026") {
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('dashPage').style.display = 'block';
+                body.style.alignItems = 'flex-start';
+                carregarInscritos();
+            } else { alert("Senha incorreta!"); }
+        }
+
+        async function carregarInscritos() {
+            const container = document.getElementById('listaContainer');
+            try {
+                const res = await fetch(SCRIPT_URL);
+                inscritos = await res.json();
+                renderizarCards();
+            } catch (e) { container.innerHTML = "Erro ao carregar dados."; }
+        }
+
+        function renderizarCards() {
+            const container = document.getElementById('listaContainer');
+            container.innerHTML = "";
             inscritos.forEach(p => {
-                div.innerHTML += `
-                    <div class="card">
-                        <div style="display:flex; justify-content: space-between;">
-                            <b>${p.nome}</b>
-                            <button class="btn-del" onclick="deletar(${p.row})"><i class="fas fa-trash"></i></button>
+                container.innerHTML += `
+                    <div class="card-jovem">
+                        <div class="card-header">
+                            <div>
+                                <b>${p.nome}</b>
+                                <div style="margin-top:5px"><span class="badge-cpf">CPF: ${p.cpf}</span></div>
+                            </div>
+                            <button class="btn btn-lixo" onclick="deletar(${p.row}, '${p.nome}')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
                         </div>
-                        <p style="font-size:0.8rem; color:#666">CPF: ${p.cpf}</p>
-                        <button class="btn btn-pdf" onclick="baixarIndividual(${p.row})" style="font-size:0.7rem;">BAIXAR FICHA</button>
+                        <div style="font-size: 0.85rem; color:#64748b; margin-bottom: 12px;">
+                            <i class="fas fa-map-marker-alt"></i> ${p.bairro} - ${p.cidade}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-fichinha" onclick="pdfIndividual(${p.row})">
+                                <i class="fas fa-id-badge"></i> VER FICHA
+                            </button>
+                        </div>
                     </div>`;
             });
         }
 
-        function baixarPDFGeral() {
+        function gerarPdfGeral() {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('landscape');
-            doc.text("RELATÓRIO COMPLETO EJC 2026", 14, 15);
+            const doc = new jsPDF('l', 'mm', 'a4');
+            doc.text("LISTA GERAL DE INSCRITOS - EJC 2026", 14, 15);
             
-            // Puxa TODOS os dados da planilha
-            const colunas = ["Nome", "CPF", "Nasc.", "WhatsApp", "Bairro", "Cidade"];
-            const linhas = inscritos.map(p => [p.nome, p.cpf, p.nascimento, p.whatsapp, p.bairro, p.cidade]);
+            const cols = ["Nome", "CPF", "Nasc.", "WhatsApp", "Bairro", "Rua/Nº", "Cidade"];
+            const rows = inscritos.map(p => [p.nome, p.cpf, p.nascimento, p.whatsapp, p.bairro, p.rua, p.cidade]);
 
-            doc.autoTable({ head: [colunas], body: linhas, startY: 25 });
-            doc.save("Relatorio_Completo_EJC.pdf");
+            doc.autoTable({ head: [cols], body: rows, startY: 25, theme: 'striped' });
+            doc.save("EJC_Lista_Completa_2026.pdf");
         }
 
-        async function deletar(linha) {
-            if(!confirm("Excluir?")) return;
-            fetch(URL, {method:'POST', mode:'no-cors', body: JSON.stringify({action:"delete", row:linha})});
-            alert("Excluído!"); carregar();
+        function pdfIndividual(linha) {
+            const p = inscritos.find(i => i.row == linha);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFillColor(37, 99, 235);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text("FICHA DE INSCRIÇÃO EJC", 20, 25);
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            let y = 60;
+            const dados = [
+                ["NOME:", p.nome.toUpperCase()],
+                ["CPF:", p.cpf],
+                ["NASCIMENTO:", p.nascimento],
+                ["WHATSAPP:", p.whatsapp],
+                ["ENDEREÇO:", `${p.rua}, ${p.bairro}`],
+                ["CIDADE:", p.cidade]
+            ];
+
+            dados.forEach(d => {
+                doc.setFont("helvetica", "bold"); doc.text(d[0], 20, y);
+                doc.setFont("helvetica", "normal"); doc.text(String(d[1]), 70, y);
+                y += 12;
+            });
+
+            doc.save(`Ficha_${p.nome}.pdf`);
         }
 
-        window.onload = carregar;
+        function compartilharZap() {
+            gerarPdfGeral();
+            setTimeout(() => {
+                window.open("https://api.whatsapp.com/send?text=Olá, o PDF com todos os inscritos foi gerado. Por favor, anexe o arquivo baixado aqui.");
+            }, 1500);
+        }
+
+        async function deletar(linha, nome) {
+            if(!confirm("Deseja mesmo excluir " + nome + "?")) return;
+            fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"delete", row:linha}) });
+            alert("Excluído com sucesso!"); carregarInscritos();
+        }
     </script>
 </body>
 </html>
