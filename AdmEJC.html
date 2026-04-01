@@ -3,106 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADM - EJC 2026</title>
+    <title>ADM EJC - Login</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #2563eb; --danger: #ef4444; --bg: #f8fafc; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
-        .header { max-width: 600px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: center; }
-        .card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .card b { color: var(--primary); font-size: 1.1rem; display: block; text-transform: uppercase; }
-        .card span { font-size: 0.85rem; color: #64748b; display: block; margin: 2px 0; }
-        .actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
-        .btn { flex: 1; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.8rem; }
-        .btn-pdf { background: #e0e7ff; color: #4338ca; }
-        .btn-del { background: #fee2e2; color: var(--danger); width: 50px; flex: none; }
-        .btn-refresh { background: var(--primary); color: white; border-radius: 10px; width: 45px; height: 45px; border: none; }
+        :root { --primary: #2563eb; --bg: #f1f5f9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .login-box, .dashboard { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
+        .dashboard { display: none; max-width: 600px; align-self: flex-start; margin-top: 20px; }
+        .logo { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; border: 3px solid var(--primary); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-blue { background: var(--primary); color: white; }
+        .btn-green { background: #10b981; color: white; }
+        .btn-outline { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+        .card { background: #fff; border: 1px solid #eee; padding: 15px; border-radius: 15px; margin-top: 10px; text-align: left; position: relative; }
+        .btn-del { position: absolute; right: 10px; top: 10px; color: #ef4444; border: none; background: none; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h2 style="margin:0; color: #1e293b;">Inscritos</h2>
-        <button class="btn-refresh" onclick="carregar()"><i class="fas fa-sync-alt"></i></button>
+    <div id="loginPage" class="login-box">
+        <img src="1774975668180.png" class="logo">
+        <h3>Acesso Restrito</h3>
+        <input type="password" id="senha" placeholder="Digite a senha do EJC">
+        <button class="btn btn-blue" onclick="logar()">ENTRAR NO PAINEL</button>
     </div>
 
-    <div id="lista" style="max-width:600px; margin:auto;">Carregando...</div>
+    <div id="dashPage" class="dashboard">
+        <div style="display:flex; justify-content: space-between; align-items: center;">
+            <img src="1774975668180.png" style="width: 40px;">
+            <button class="btn-outline" style="padding: 5px 10px; border-radius: 8px;" onclick="location.reload()">Sair</button>
+        </div>
+        
+        <h2 style="color: var(--primary)">Gestão EJC 2026</h2>
+        
+        <button class="btn btn-green" onclick="pdfGeral()">
+            <i class="fas fa-file-export"></i> BAIXAR PDF COMPLETO
+        </button>
+        
+        <button class="btn btn-outline" onclick="enviarZap()">
+            <i class="fab fa-whatsapp"></i> ENVIAR PDF PELO WHATSAPP
+        </button>
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+        
+        <div id="lista">Carregando inscritos...</div>
+    </div>
 
     <script>
         const URL = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
-        let dadosLocais = [];
+        let inscritos = [];
 
-        async function carregar() {
-            const div = document.getElementById('lista');
-            div.innerHTML = '<p style="text-align:center">Buscando na planilha...</p>';
-            try {
-                const res = await fetch(URL);
-                dadosLocais = await res.json();
-                div.innerHTML = "";
-                dadosLocais.forEach(p => {
-                    div.innerHTML += `
-                        <div class="card">
-                            <b>${p.nome}</b>
-                            <span><i class="fas fa-id-card"></i> CPF: ${p.cpf}</span>
-                            <span><i class="fas fa-map-marker-alt"></i> Bairro: ${p.bairro}</span>
-                            <div class="actions">
-                                <button class="btn btn-pdf" onclick="baixarPDF(${p.row})">
-                                    <i class="fas fa-file-pdf"></i> BAIXAR FICHA
-                                </button>
-                                <button class="btn btn-del" onclick="deletar(${p.row}, '${p.nome}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>`;
-                });
-            } catch (e) { div.innerHTML = "Erro ao carregar dados."; }
+        function logar() {
+            if(document.getElementById('senha').value === "ejc2026") {
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('dashPage').style.display = 'block';
+                carregar();
+            } else { alert("Senha incorreta!"); }
         }
 
-        function baixarPDF(linha) {
-            const p = dadosLocais.find(i => i.row == linha);
+        async function carregar() {
+            try {
+                const res = await fetch(URL);
+                inscritos = await res.json();
+                render();
+            } catch (e) { alert("Erro ao carregar dados."); }
+        }
+
+        function render() {
+            const div = document.getElementById('lista');
+            div.innerHTML = inscritos.length ? "" : "Ninguém inscrito.";
+            inscritos.forEach(p => {
+                div.innerHTML += `
+                    <div class="card">
+                        <b>${p.nome}</b>
+                        <span style="font-size: 0.8rem; color: #667">CPF: ${p.cpf}</span>
+                        <div style="display:flex; gap: 10px; margin-top: 10px;">
+                           <button class="btn btn-outline" style="font-size: 0.7rem; padding: 8px;" onclick="pdfIndividual(${p.row})">BAIXAR FICHA</button>
+                        </div>
+                        <button class="btn-del" onclick="deletar(${p.row}, '${p.nome}')"><i class="fas fa-trash"></i></button>
+                    </div>`;
+            });
+        }
+
+        function pdfIndividual(linha) {
+            const p = inscritos.find(i => i.row == linha);
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-
-            // Cabeçalho azul
-            doc.setFillColor(37, 99, 235);
-            doc.rect(0, 0, 210, 40, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(22);
-            doc.text("FICHA EJC 2026", 20, 25);
-
-            // Conteúdo
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(14);
-            doc.text("DADOS DO INSCRITO:", 20, 55);
-            
-            doc.setFontSize(12);
-            let y = 70;
-            const campos = [
-                ["NOME:", p.nome.toUpperCase()],
-                ["CPF:", p.cpf],
-                ["BAIRRO:", p.bairro],
-                ["DATA REF:", p.data || "Ver na planilha"]
-            ];
-
-            campos.forEach(c => {
-                doc.setFont("helvetica", "bold");
-                doc.text(c[0], 20, y);
-                doc.setFont("helvetica", "normal");
-                doc.text(String(c[1]), 50, y);
-                y += 12;
-            });
-
+            doc.text(`FICHA INDIVIDUAL - ${p.nome}`, 20, 20);
+            doc.text(`CPF: ${p.cpf}`, 20, 30);
+            doc.text(`Bairro: ${p.bairro}`, 20, 40);
             doc.save(`Ficha_${p.nome}.pdf`);
+        }
+
+        function pdfGeral() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("RELATÓRIO GERAL DE INSCRITOS - EJC 2026", 14, 15);
+            
+            const rows = inscritos.map(p => [p.nome, p.cpf, p.bairro]);
+            doc.autoTable({
+                head: [['Nome', 'CPF', 'Bairro']],
+                body: rows,
+                startY: 25
+            });
+            doc.save("Inscritos_EJC_Completo.pdf");
+        }
+
+        function enviarZap() {
+            pdfGeral();
+            setTimeout(() => {
+                window.open("https://api.whatsapp.com/send?text=Olá, segue o PDF com a lista completa dos inscritos que acabei de baixar!");
+            }, 2000);
         }
 
         async function deletar(linha, nome) {
             if(!confirm("Excluir " + nome + "?")) return;
             fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action: "delete", row: linha}) });
-            alert("Enviado! Aguarde 2 segundos e atualize.");
+            alert("Excluído!"); carregar();
         }
-
-        window.onload = carregar;
     </script>
 </body>
 </html>
