@@ -3,47 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADM EJC - Painel Completo</title>
+    <title>ADM EJC - PNSPS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
-        .dashboard { max-width: 800px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .btn { border: none; border-radius: 10px; padding: 14px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-bottom: 10px; width: 100%; display: block; text-align: center; text-decoration: none; }
-        .btn-pdf { background: var(--primary); color: white; }
-        .btn-zap { background: #22c55e; color: white; }
-        .btn-del { background: #fee2e2; color: #ef4444; width: 45px; margin: 0; }
-        #loginPage { max-width: 380px; margin: 100px auto; background: white; padding: 40px; border-radius: 24px; text-align: center; }
-        input { width: 100%; padding: 14px; margin: 10px 0; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; }
+        :root { --primary: #1e293b; --accent: #2563eb; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #1e293b; }
+        .container { max-width: 900px; margin: auto; }
+        
+        /* Login */
+        #loginPage { max-width: 350px; margin: 100px auto; background: white; padding: 40px; border-radius: 24px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        input { width: 100%; padding: 14px; margin: 15px 0; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; }
+        
+        /* Dashboard */
+        .header-painel { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .btn { border: none; border-radius: 12px; padding: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; display: block; width: 100%; text-decoration: none; text-align: center; margin-bottom: 15px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: #22c55e; color: white; }
+        .btn-individual { background: #eff6ff; color: var(--accent); padding: 8px; font-size: 0.8rem; margin: 0; }
+        
+        .card-jovem { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; }
+        .card-info { display: grid; grid-template-columns: 1fr auto; align-items: center; }
+        .loading { text-align: center; padding: 40px; font-weight: bold; color: var(--accent); }
     </style>
 </head>
 <body>
 
     <div id="loginPage">
-        <img src="1774975668180.png" style="width:100px; border-radius:50%; border:4px solid #f1f5f9; margin-bottom:20px;">
-        <h2>Acesso ADM</h2>
-        <input type="password" id="senha" placeholder="Digite a senha">
-        <button class="btn btn-pdf" onclick="logar()">ENTRAR</button>
+        <img src="1774975668180.png" style="width:80px; border-radius:50%; margin-bottom:15px;">
+        <h2>EJC ADM</h2>
+        <input type="password" id="senha" placeholder="Senha de acesso">
+        <button class="btn btn-primary" onclick="logar()">ENTRAR</button>
     </div>
 
-    <div id="dashPage" style="display:none;" class="dashboard">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-            <h2 style="color:#1e293b">Gestão EJC 2026</h2>
-            <img src="1774975668180.png" style="width:50px; border-radius:50%">
+    <div id="dashPage" style="display:none;" class="container">
+        <div class="header-painel">
+            <div>
+                <h1 style="margin:0; font-size:1.5rem;">Inscritos 2026</h1>
+                <small style="color:#64748b">Paróquia N. S. Perpétuo Socorro</small>
+            </div>
+            <button onclick="carregarDados()" style="background:none; border:none; cursor:pointer; color:var(--accent)"><i class="fas fa-sync-alt fa-2x"></i></button>
         </div>
 
-        <button class="btn btn-pdf" onclick="gerarPdfCompleto()">
-            <i class="fas fa-file-download"></i> BAIXAR RELATÓRIO COMPLETO (TODOS DADOS)
+        <button class="btn btn-primary" onclick="gerarRelatorioGeral()">
+            <i class="fas fa-file-pdf"></i> BAIXAR RELATÓRIO COMPLETO
         </button>
 
-        <button class="btn btn-zap" onclick="enviarZap()">
-            <i class="fab fa-whatsapp"></i> ENVIAR LISTA PELO WHATSAPP
+        <button class="btn btn-success" onclick="compartilharWhatsApp()">
+            <i class="fab fa-whatsapp"></i> NOTIFICAR EQUIPE (WHATSAPP)
         </button>
 
-        <div id="lista">Carregando...</div>
+        <div id="listaContainer">
+            <div class="loading"><i class="fas fa-spinner fa-spin"></i> Sincronizando com Google Sheets...</div>
+        </div>
     </div>
 
     <script>
@@ -54,94 +67,96 @@
             if(document.getElementById('senha').value === "ejc2026") {
                 document.getElementById('loginPage').style.display = 'none';
                 document.getElementById('dashPage').style.display = 'block';
-                carregar();
+                carregarDados();
             } else { alert("Senha incorreta!"); }
         }
 
-        async function carregar() {
-            const res = await fetch(SCRIPT_URL);
-            inscritos = await res.json();
-            render();
+        async function carregarDados() {
+            const container = document.getElementById('listaContainer');
+            container.innerHTML = '<div class="loading">Atualizando...</div>';
+            try {
+                const res = await fetch(SCRIPT_URL);
+                inscritos = await res.json();
+                renderizarCards();
+            } catch (e) { container.innerHTML = "Erro ao carregar dados da planilha."; }
         }
 
-        function render() {
-            const div = document.getElementById('lista');
-            div.innerHTML = "";
+        function renderizarCards() {
+            const container = document.getElementById('listaContainer');
+            container.innerHTML = "";
             inscritos.forEach(p => {
-                div.innerHTML += `
-                    <div class="card">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                container.innerHTML += `
+                    <div class="card-jovem">
+                        <div class="card-info">
                             <div>
-                                <b style="font-size:1.1rem; text-transform:uppercase;">${p.nome}</b>
-                                <div style="color:#64748b; font-size:0.85rem; margin-top:5px;">
-                                    <span>CPF: ${p.cpf}</span> | <span>${p.bairro}</span>
+                                <b style="text-transform:uppercase; font-size:1.1rem;">${p.Nome || "---"}</b>
+                                <div style="font-size:0.85rem; color:#64748b; margin-top:5px;">
+                                    CPF: ${p.CPF || "---"} | Bairro: ${p.Bairro || "---"}
                                 </div>
                             </div>
-                            <button class="btn btn-del" onclick="deletar(${p.row})"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-individual" onclick="gerarFichaIndividual(${p.row})">VER FICHA</button>
                         </div>
-                        <button class="btn btn-pdf" style="margin-top:15px; font-size:0.8rem; padding:8px;" onclick="pdfIndividual(${p.row})">BAIXAR FICHA INDIVIDUAL</button>
                     </div>`;
             });
         }
 
-        function gerarPdfCompleto() {
+        function gerarRelatorioGeral() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'mm', 'a4');
-            doc.setFontSize(16);
-            doc.text("RELATÓRIO GERAL DE INSCRITOS - EJC 2026", 14, 15);
-            
-            const cols = ["NOME", "CPF", "NASCIMENTO", "ZAP", "RUA/Nº", "BAIRRO", "CIDADE"];
-            const rows = inscritos.map(p => [p.nome, p.cpf, p.nascimento, p.telefone, p.rua, p.bairro, p.cidade]);
+            doc.setFontSize(18);
+            doc.text("LISTA GERAL DE INSCRITOS - EJC 2026", 14, 15);
 
-            doc.autoTable({ head: [cols], body: rows, startY: 25, theme: 'grid', headStyles: {fillColor: [37, 99, 235]} });
-            doc.save("Relatorio_EJC_Completo.pdf");
+            const cabecalho = [["NOME", "CPF", "NASCIMENTO", "WHATSAPP", "RUA", "BAIRRO", "CIDADE"]];
+            const linhas = inscritos.map(p => [
+                p.Nome, p.CPF, p.Idade, p.whatsapp, p.Rua, p.Bairro, p.Cidade
+            ]);
+
+            doc.autoTable({
+                head: cabecalho,
+                body: linhas,
+                startY: 25,
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [30, 41, 59] }
+            });
+            doc.save("Relatorio_EJC_2026.pdf");
         }
 
-        function pdfIndividual(linha) {
+        function gerarFichaIndividual(linha) {
             const p = inscritos.find(i => i.row == linha);
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
-            doc.setFillColor(37, 99, 235);
+
+            doc.setFillColor(30, 41, 59);
             doc.rect(0, 0, 210, 40, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(22);
-            doc.text("FICHA EJC 2026", 20, 25);
+            doc.text("FICHA DE INSCRIÇÃO", 20, 25);
 
             doc.setTextColor(0);
             doc.setFontSize(12);
             let y = 60;
-            const info = [
-                ["NOME COMPLETO:", p.nome.toUpperCase()],
-                ["CPF:", p.cpf],
-                ["DATA NASCIMENTO:", p.nascimento],
-                ["WHATSAPP:", p.telefone],
-                ["ENDEREÇO:", p.rua],
-                ["BAIRRO:", p.bairro],
-                ["CIDADE:", p.cidade]
+            const dados = [
+                ["NOME COMPLETO:", p.Nome.toUpperCase()],
+                ["CPF:", p.CPF],
+                ["DATA NASCIMENTO:", p.Idade],
+                ["WHATSAPP:", p.whatsapp],
+                ["ENDEREÇO:", p.Rua],
+                ["BAIRRO:", p.Bairro],
+                ["CIDADE:", p.Cidade]
             ];
 
-            info.forEach(item => {
-                doc.setFont("helvetica", "bold"); doc.text(item[0], 20, y);
-                doc.setFont("helvetica", "normal"); doc.text(String(item[1]), 75, y);
+            dados.forEach(d => {
+                doc.setFont("helvetica", "bold"); doc.text(d[0], 20, y);
+                doc.setFont("helvetica", "normal"); doc.text(String(d[1]), 70, y);
                 y += 12;
             });
 
-            doc.save(`Ficha_${p.nome}.pdf`);
+            doc.save(`Ficha_${p.Nome}.pdf`);
         }
 
-        function enviarZap() {
-            gerarPdfCompleto();
-            const msg = window.encodeURIComponent("Olá! Acabei de gerar a lista completa de inscritos do EJC 2026. Segue o relatório detalhado em anexo.");
-            setTimeout(() => {
-                window.open(`https://api.whatsapp.com/send?text=${msg}`);
-            }, 1500);
-        }
-
-        async function deletar(linha) {
-            if(!confirm("Excluir este inscrito permanentemente?")) return;
-            fetch(SCRIPT_URL, {method:'POST', mode:'no-cors', body: JSON.stringify({action:"delete", row:linha})});
-            alert("Excluído!"); carregar();
+        function compartilharWhatsApp() {
+            const texto = window.encodeURIComponent("Olá! O relatório de inscritos do EJC 2026 foi atualizado no painel. Por favor, verifiquem os novos nomes.");
+            window.open(`https://api.whatsapp.com/send?text=${texto}`);
         }
     </script>
 </body>
