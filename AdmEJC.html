@@ -17,53 +17,37 @@
         :root { --primary: #1e293b; --accent: #2563eb; --danger: #ef4444; --bg: #f8fafc; --success: #16a34a; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
         .container { max-width: 900px; margin: auto; }
-        
+        .stats { background: var(--primary); color: white; padding: 20px; border-radius: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .stats h2 { margin: 0; font-size: 1.8rem; }
         .bairro-menu { display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; margin-bottom: 20px; scrollbar-width: none; }
-        .bairro-item { background: white; padding: 10px 20px; border-radius: 20px; white-space: nowrap; cursor: pointer; border: 1px solid #e2e8f0; font-weight: 600; color: #64748b; transition: 0.3s; }
-        .bairro-item.active { background: var(--accent); color: white; border-color: var(--accent); }
-
-        .lista-jovens { display: grid; gap: 10px; }
-        .card-jovem { background: white; padding: 15px; border-radius: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .info-principal h3 { margin: 0; font-size: 1.1rem; color: var(--primary); }
-        .info-principal p { margin: 5px 0 0; color: #64748b; font-size: 0.9rem; }
-        
-        .acoes { display: flex; gap: 10px; }
-        .btn-acao { border: none; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.2s; }
+        .bairro-item { background: white; padding: 10px 20px; border-radius: 20px; white-space: nowrap; cursor: pointer; border: 1px solid #e2e8f0; font-weight: 600; color: #64748b; }
+        .bairro-item.active { background: var(--accent); color: white; }
+        .lista-jovens { display: grid; gap: 12px; }
+        .card-jovem { background: white; padding: 12px; border-radius: 18px; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .foto-perfil-card { width: 55px; height: 55px; border-radius: 15px; object-fit: cover; background: #e2e8f0; }
+        .info-principal { flex-grow: 1; }
+        .info-principal h3 { margin: 0; font-size: 1rem; color: var(--primary); text-transform: uppercase; }
+        .acoes { display: flex; gap: 8px; }
+        .btn-acao { border: none; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
         .btn-pdf { background: #fee2e2; color: var(--danger); }
         .btn-whatsapp { background: #dcfce7; color: var(--success); }
-        
-        .stats { background: var(--primary); color: white; padding: 20px; border-radius: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .stats h2 { margin: 0; font-size: 1.5rem; }
-        
-        #loading { text-align: center; padding: 40px; color: #64748b; }
-        .btn-relatorio { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; }
+        .btn-relatorio { background: var(--accent); color: white; border: none; padding: 18px; border-radius: 15px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 25px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="stats">
-        <div>
-            <small>Total de Inscritos</small>
-            <h2 id="totalGeral">0</h2>
-        </div>
-        <i class="fas fa-users fa-2x" style="opacity: 0.5"></i>
+        <div><small>Total de Inscritos</small><h2 id="totalGeral">0</h2></div>
+        <img src="ejcmaracanau.jpeg" style="width: 60px; height: 60px; border-radius: 50%;">
     </div>
-
-    <div id="bairrosMenu" class="bairro-menu">
-        <div class="bairro-item active" onclick="filtrar('TODOS', this)">TODOS</div>
-    </div>
-
-    <div id="loading"><i class="fas fa-spinner fa-spin"></i> Carregando dados da planilha...</div>
+    <div id="bairrosMenu" class="bairro-menu"></div>
     <div id="lista" class="lista-jovens"></div>
-
-    <button class="btn-relatorio" onclick="gerarRelatorioGeral()">
-        <i class="fas fa-file-export"></i> GERAR RELATÓRIO GERAL (PDF)
-    </button>
+    <button class="btn-relatorio" onclick="gerarRelatorioGeral()"><i class="fas fa-file-export"></i> RELATÓRIO GERAL (PDF)</button>
 </div>
 
 <script>
-    const SCRIPT_URL = "SUA_URL_AQUI"; // <--- COLOQUE SUA URL DO GOOGLE SCRIPTS AQUI
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
     let todosDados = [];
     const FOTO_SEM_PERFIL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -71,22 +55,16 @@
         try {
             const response = await fetch(SCRIPT_URL);
             todosDados = await response.json();
-            
-            document.getElementById('loading').style.display = 'none';
             document.getElementById('totalGeral').innerText = todosDados.length;
-            
             configurarFiltros();
             renderizarLista(todosDados);
-        } catch (e) {
-            document.getElementById('loading').innerHTML = "Erro ao carregar dados. Verifique a URL do Script.";
-        }
+        } catch (e) { alert("Erro ao carregar dados."); }
     }
 
     function configurarFiltros() {
-        const bairros = ['TODOS', ...new Set(todosDados.map(item => item.Bairro))];
+        const bairros = ['TODOS', ...new Set(todosDados.map(item => item.Bairro).filter(b => b))].sort();
         const menu = document.getElementById('bairrosMenu');
         menu.innerHTML = '';
-        
         bairros.forEach(b => {
             const div = document.createElement('div');
             div.className = `bairro-item ${b === 'TODOS' ? 'active' : ''}`;
@@ -99,108 +77,51 @@
     function filtrar(bairro, elemento) {
         document.querySelectorAll('.bairro-item').forEach(i => i.classList.remove('active'));
         elemento.classList.add('active');
-        
-        const filtrados = bairro === 'TODOS' ? todosDados : todosDados.filter(i => i.Bairro === bairro);
-        renderizarLista(filtrados);
+        renderizarLista(bairro === 'TODOS' ? todosDados : todosDados.filter(i => i.Bairro === bairro));
     }
 
     function renderizarLista(dados) {
         const lista = document.getElementById('lista');
         lista.innerHTML = '';
-        
         dados.forEach(p => {
+            const fotoUrl = p["foto (link)"] || p.foto || FOTO_SEM_PERFIL;
             const card = document.createElement('div');
             card.className = 'card-jovem';
             card.innerHTML = `
-                <div class="info-principal">
-                    <h3>${p.Nome}</h3>
-                    <p><i class="fas fa-map-marker-alt"></i> ${p.Bairro}</p>
-                </div>
+                <img src="${fotoUrl.length > 50 ? fotoUrl : FOTO_SEM_PERFIL}" class="foto-perfil-card">
+                <div class="info-principal"><h3>${p.Nome}</h3><p>${p.Bairro}</p></div>
                 <div class="acoes">
-                    <button class="btn-acao btn-whatsapp" onclick="abrirWhats('${p.whatsapp}')">
-                        <i class="fab fa-whatsapp"></i>
-                    </button>
-                    <button class="btn-acao btn-pdf" onclick="gerarFichaIndividual('${encodeURIComponent(JSON.stringify(p))}')">
-                        <i class="fas fa-file-pdf"></i>
-                    </button>
-                </div>
-            `;
+                    <button class="btn-acao btn-whatsapp" onclick="window.open('https://wa.me/55${p.whatsapp.replace(/\D/g,'')}')"><i class="fab fa-whatsapp"></i></button>
+                    <button class="btn-acao btn-pdf" onclick='gerarPDF(${JSON.stringify(p)})'><i class="fas fa-file-pdf"></i></button>
+                </div>`;
             lista.appendChild(card);
         });
     }
 
-    function abrirWhats(num) {
-        const limpo = num.replace(/\D/g, '');
-        window.open(`https://wa.me/55${limpo}`, '_blank');
-    }
-
-    function formatarIdadeCompleta(dataNasc) {
-        if(!dataNasc) return "---";
-        const nasc = new Date(dataNasc);
-        const hoje = new Date();
-        let idade = hoje.getFullYear() - nasc.getFullYear();
-        if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() == nasc.getMonth() && hoje.getDate() < nasc.getDate())) idade--;
-        return `${idade} anos (${dataNasc.split('-').reverse().join('/')})`;
-    }
-
-    function gerarFichaIndividual(jsonP) {
-        const p = JSON.parse(decodeURIComponent(jsonP));
+    function gerarPDF(p) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-
-        // Cabeçalho
-        doc.setFillColor(30, 41, 59);
-        doc.rect(0, 0, 210, 30, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(16);
-        doc.text("FICHA DE PRÉ-INSCRIÇÃO EJC 2026", 105, 20, { align: 'center' });
-
-        // Foto (se houver)
-        const foto = (p.foto && p.foto.length > 50) ? p.foto : FOTO_SEM_PERFIL;
-        if(foto !== FOTO_SEM_PERFIL) {
-            try { doc.addImage(foto, 'JPEG', 150, 40, 40, 50); } catch(e) {}
-        }
-
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(12);
-        
-        let y = 50;
-        const campos = [
-            ["NOME:", p.Nome],
-            ["CPF:", p.CPF],
-            ["NASCIMENTO:", formatarIdadeCompleta(p.Idade)],
-            ["WHATSAPP:", p.whatsapp],
-            ["RUA:", p.Rua || "Não informada"],
-            ["BAIRRO:", p.Bairro],
-            ["CIDADE:", p.Cidade]
-        ];
-
-        campos.forEach(campo => {
-            doc.setFont(undefined, 'bold');
-            doc.text(campo[0], 20, y);
-            doc.setFont(undefined, 'normal');
-            doc.text(String(campo[1]), 60, y);
+        doc.setFillColor(30, 41, 59); doc.rect(0, 0, 210, 35, 'F');
+        doc.setTextColor(255, 255, 255); doc.setFontSize(18); doc.text("FICHA EJC 2026", 105, 22, { align: 'center' });
+        const foto = p["foto (link)"] || p.foto;
+        if(foto && foto.length > 50) { try { doc.addImage(foto, 'JPEG', 150, 45, 40, 50); } catch(e) {} }
+        doc.setTextColor(0); doc.setFontSize(12);
+        let y = 55;
+        [["NOME:", p.Nome], ["CPF:", p.CPF], ["NASCIMENTO:", p.Idade], ["WHATSAPP:", p.whatsapp], ["BAIRRO:", p.Bairro], ["RUA:", p.Rua]].forEach(c => {
+            doc.setFont(undefined, 'bold'); doc.text(c[0], 20, y);
+            doc.setFont(undefined, 'normal'); doc.text(String(c[1] || ""), 60, y);
             y += 12;
         });
-
         doc.save(`Ficha_${p.Nome}.pdf`);
     }
 
     function gerarRelatorioGeral() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('l', 'mm', 'a4');
-        doc.setFontSize(18);
-        doc.text("RELATÓRIO GERAL EJC 2026 - PNSPS", 14, 15);
-        
-        const head = [['Nome', 'CPF', 'Idade', 'WhatsApp', 'Bairro']];
-        const body = todosDados.map(p => [
-            p.Nome, p.CPF, formatarIdadeCompleta(p.Idade).split(' ')[0], p.whatsapp, p.Bairro
-        ]);
-
-        doc.autoTable({ head, body, startY: 25, theme: 'striped' });
-        doc.save("Relatorio_Geral_EJC.pdf");
+        doc.text("RELATÓRIO GERAL - EJC 2026", 14, 15);
+        doc.autoTable({ head: [['Nome', 'CPF', 'WhatsApp', 'Bairro']], body: todosDados.map(p => [p.Nome, p.CPF, p.whatsapp, p.Bairro]), startY: 25 });
+        doc.save("Relatorio_EJC.pdf");
     }
-
     carregarDados();
 </script>
 </body>
