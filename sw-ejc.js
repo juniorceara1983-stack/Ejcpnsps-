@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ejc-adm-v1';
+const CACHE_NAME = 'ejc-adm-v3';
 const assets = [
   './AdmEJC.html',
   './manifest-adm-ejc.json',
