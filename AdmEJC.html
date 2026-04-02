@@ -7,8 +7,28 @@
     <link rel="manifest" href="manifest-adm-ejc.json">
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw-ejc.js');
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw-ejc.js').then(reg => {
+        console.log('Service Worker registrado!');
+      }).catch(err => console.log('Erro no SW:', err));
+    });
   }
+
+  // SCRIPT PARA FORÇAR O CONVITE DE INSTALAÇÃO (PWA)
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Tenta mostrar o prompt após 3 segundos de navegação
+    setTimeout(() => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          deferredPrompt = null;
+        });
+      }
+    }, 3000);
+  });
 </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
@@ -81,7 +101,6 @@
         <div id="listaContainer">Sincronizando...</div>
         
         <div class="signature">By: Jr&Iz</div>
-
         <div class="signature">Deus abençoe a todos!</div>
     </div>
 
@@ -110,7 +129,6 @@
             try {
                 const res = await fetch(SCRIPT_URL);
                 const rawData = await res.json();
-                // Adiciona o índice da linha (row) para funções de deletar/gerar
                 inscritos = rawData.map((item, index) => ({ ...item, row: index + 2 }));
                 renderizar();
             } catch (e) { container.innerHTML = "Erro ao carregar dados."; }
@@ -120,7 +138,6 @@
             const chavesDisponiveis = Object.keys(obj);
             const chaveEncontrada = chavesDisponiveis.find(k => k.toLowerCase().trim() === chave.toLowerCase().trim());
             let valor = chaveEncontrada ? obj[chaveEncontrada] : "---";
-            // Garante que retorne string para evitar erros no .toUpperCase()
             return valor === null || valor === undefined ? "---" : String(valor);
         }
 
