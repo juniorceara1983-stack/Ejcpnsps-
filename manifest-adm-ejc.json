@@ -8,10 +8,18 @@
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#1e293b",
-  "icons": [{
-    "src": "ejcmaracanau.jpeg",
-    "sizes": "512x512",
-    "type": "image/jpeg"
-    "purpose": "any maskable"
-  }]
+  "icons": [
+    {
+      "src": "ejcmaracanau.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "ejcmaracanau.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
 }
