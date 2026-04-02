@@ -109,7 +109,9 @@
             container.innerHTML = "Atualizando dados...";
             try {
                 const res = await fetch(SCRIPT_URL);
-                inscritos = await res.json();
+                const rawData = await res.json();
+                // Adiciona o índice da linha (row) para funções de deletar/gerar
+                inscritos = rawData.map((item, index) => ({ ...item, row: index + 2 }));
                 renderizar();
             } catch (e) { container.innerHTML = "Erro ao carregar dados."; }
         }
@@ -117,7 +119,9 @@
         function obter(obj, chave) {
             const chavesDisponiveis = Object.keys(obj);
             const chaveEncontrada = chavesDisponiveis.find(k => k.toLowerCase().trim() === chave.toLowerCase().trim());
-            return chaveEncontrada ? obj[chaveEncontrada] : "---";
+            let valor = chaveEncontrada ? obj[chaveEncontrada] : "---";
+            // Garante que retorne string para evitar erros no .toUpperCase()
+            return valor === null || valor === undefined ? "---" : String(valor);
         }
 
         function calcularIdadeAnos(dataNasc) {
@@ -145,7 +149,6 @@
 
         function gerarRelatorioBairro(nomeBairro) {
             if (!nomeBairro) return;
-            
             const jovensDoBairro = inscritos.filter(p => obter(p, 'Bairro').toUpperCase().trim() === nomeBairro.toUpperCase());
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -182,7 +185,7 @@
             });
 
             doc.save(`Fichas_EJC_${nomeBairro}.pdf`);
-            document.getElementById('selectBairros').value = ""; // Reseta o select
+            document.getElementById('selectBairros').value = ""; 
         }
 
         function renderizar() {
@@ -190,7 +193,6 @@
             const selectBairros = document.getElementById('selectBairros');
             const termo = document.getElementById('searchBox').value.toLowerCase();
             
-            // 1. ATUALIZAR LISTA DE BAIRROS NO SELECT
             const bairrosUnicos = [...new Set(inscritos.map(p => obter(p, 'Bairro').toUpperCase().trim()))].sort();
             const valorAtual = selectBairros.value;
             selectBairros.innerHTML = '<option value="">Selecione um bairro para download...</option>';
@@ -202,7 +204,6 @@
             });
             selectBairros.value = valorAtual;
 
-            // 2. FILTRAR E ORDENAR LISTA PARA O DASHBOARD
             let filtrados = inscritos.filter(p => {
                 return obter(p, 'Nome').toLowerCase().includes(termo) || 
                        obter(p, 'CPF').toLowerCase().includes(termo) ||
@@ -242,7 +243,6 @@
             });
         }
 
-        // Funções de verFoto, deletarRegistro, gerarFicha e gerarRelatorioGeral seguem iguais...
         function verFoto(linha) {
             const p = inscritos.find(i => i.row == linha);
             const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
@@ -252,8 +252,11 @@
 
         async function deletarRegistro(linha) {
             if(!confirm("Deseja mesmo apagar este inscrito?")) return;
-            await fetch(SCRIPT_URL, {method:'POST', mode:'no-cors', body:JSON.stringify({action:"delete", row:linha})});
-            carregarDados();
+            try {
+                await fetch(SCRIPT_URL, {method:'POST', mode:'no-cors', body:JSON.stringify({action:"delete", row:linha})});
+                alert("Solicitação enviada. A lista será atualizada.");
+                carregarDados();
+            } catch(e) { alert("Erro ao deletar."); }
         }
 
         function gerarFicha(linha) {
