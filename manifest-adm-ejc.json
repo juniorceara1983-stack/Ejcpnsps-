@@ -1,0 +1,16 @@
+{
+  "name": "Gestão EJC - PNSPS",
+  "short_name": "ADM EJC",
+  "description": "Painel Administrativo EJC",
+  "id": "ejc-adm-pnsps",
+  "start_url": "./AdmEJC.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e293b",
+  "icons": [{
+    "src": "ejcmaracanau.jpeg",
+    "sizes": "512x512",
+    "type": "image/jpeg"
+  }]
+}
