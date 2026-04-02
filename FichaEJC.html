@@ -11,14 +11,14 @@
         body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; padding: 15px; margin: 0; }
         .container { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); border-top: 10px solid var(--primary); }
         .header { text-align: center; margin-bottom: 25px; }
-        .logo { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid var(--pnsps); }
+        .logo { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid var(--pnsps); margin-bottom: 10px; }
         label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.85rem; color: #64748b; }
-        input { width: 100%; padding: 12px; margin-top: 5px; border: 1.5px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; }
+        input { width: 100%; padding: 12px; margin-top: 5px; border: 1.5px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 1rem; }
         .btn-foto-nova { margin-top: 20px; background: #f8fafc; border: 2px solid var(--primary); color: var(--primary); padding: 14px; border-radius: 12px; font-weight: bold; text-align: center; cursor: pointer; }
-        #preview { width: 100%; margin-top: 15px; border-radius: 15px; display: none; }
+        #preview { width: 100%; margin-top: 15px; border-radius: 15px; display: none; border: 2px solid var(--pnsps); }
         .btn-enviar { width: 100%; background: var(--primary); color: white; border: none; padding: 18px; border-radius: 12px; margin-top: 25px; font-weight: bold; cursor: pointer; }
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center; padding:20px; }
-        .modal-content { background:white; padding:30px; border-radius:20px; text-align:center; max-width:400px; }
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+        .modal-content { background:white; padding:30px; border-radius:20px; width:100%; max-width:400px; text-align:center; }
         .foto-padre { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 3px solid var(--primary); }
     </style>
 </head>
@@ -27,6 +27,7 @@
         <div class="header">
             <img src="ejcmaracanau.jpeg" class="logo">
             <h2>Pré-Inscrição EJC</h2>
+            <small>Paróquia Nossa Senhora dos Prazeres</small>
         </div>
         <form id="formEJC">
             <label>NOME COMPLETO</label>
@@ -35,7 +36,7 @@
             <input type="text" id="cpf" required placeholder="000.000.000-00">
             <label>DATA DE NASCIMENTO</label>
             <input type="date" id="nascimento" required>
-            <label>WHATSAPP</label>
+            <label>WHATSAPP (COM DDD)</label>
             <input type="text" id="whatsapp" required placeholder="(00) 0 0000-0000">
             <label>RUA E NÚMERO</label>
             <input type="text" id="rua" required>
@@ -54,7 +55,7 @@
     <div id="meuModal" class="modal">
         <div class="modal-content">
             <img src="IMG_20260401_014539.jpg" class="foto-padre">
-            <p id="msgTexto" style="white-space: pre-line;"></p>
+            <p id="msgTexto" style="white-space: pre-line; color:#334155; font-weight:500;"></p>
             <button onclick="location.reload()" class="btn-enviar">AMÉM!</button>
         </div>
     </div>
@@ -65,9 +66,13 @@
             $('#whatsapp').mask('(00) 0 0000-0000');
         });
 
-        const mensagensEJC = ["\"Não tenhas medo, que Eu estou contigo!\"", "\"Tudo posso Naquele que me fortalece!\"", "\"Jovem, eu te digo: levanta-te!\""];
-        let fotoProntaBase64 = "";
+        const mensagensEJC = [
+            "\"Não tenhas medo, que Eu estou contigo!\" (Is 41,10)",
+            "\"Tudo posso Naquele que me fortalece!\" (Fl 4,13)",
+            "\"Jovem, eu te digo: levanta-te!\" (Lc 7,14)"
+        ];
 
+        let fotoProntaBase64 = "";
         function previewImage(input) {
             if (input.files && input.files[0]) {
                 let reader = new FileReader();
@@ -91,7 +96,7 @@
         document.getElementById('formEJC').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnAcao');
-            const SCRIPT_URL = "SUA_URL_DO_GOOGLE_AQUI"; // Coloque sua URL aqui!
+            const SCRIPT_URL = "SUA_URL_DO_GOOGLE_AQUI"; 
 
             try {
                 btn.innerText = "ENVIANDO..."; btn.disabled = true;
@@ -106,7 +111,8 @@
                     "foto": fotoProntaBase64
                 };
                 await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(dados) });
-                document.getElementById('msgTexto').innerText = "Olá! Eu sou o Padre Luciano.\nSua inscrição foi recebida!\n\n" + mensagensEJC[Math.floor(Math.random() * mensagensEJC.length)];
+                const msg = mensagensEJC[Math.floor(Math.random() * mensagensEJC.length)];
+                document.getElementById('msgTexto').innerText = "Olá! Eu sou o Padre Luciano.\nInscrição realizada!\n\n" + msg;
                 document.getElementById('meuModal').style.display = 'flex';
             } catch (e) { alert("Erro ao enviar."); btn.disabled = false; }
         }
