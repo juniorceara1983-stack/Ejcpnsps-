@@ -1,30 +1,21 @@
-const CACHE_NAME = 'ejc-adm-v3';
+const CACHE_NAME = 'ejc-teste-v9';
 const assets = [
   './AdmEJC.html',
-  './manifest-adm-ejc.json',
-  './ejcmaracanau.jpeg'
+  './manifest-adm-ejc.json'
 ];
 
-// Instala os arquivos essenciais
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(assets);
-    })
-  );
+  e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(assets)));
   self.skipWaiting();
 });
 
-// Ativa o service worker imediatamente
 self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.map((k) => k !== CACHE_NAME && caches.delete(k))))
+  );
+  return self.clients.claim();
 });
 
-// Gerencia as requisições
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
-    })
-  );
+  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });
