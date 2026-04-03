@@ -1,25 +1,22 @@
 {
-  "name": "Gestão EJC - PNSPS",
-  "short_name": "ADM EJC",
-  "description": "Painel Administrativo EJC",
-  "id": "ejc-adm-pnsps",
+  "name": "Teste EJC",
+  "short_name": "Teste",
   "start_url": "./AdmEJC.html",
-  "scope": "./",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#1e293b",
+  "background_color": "#ffffff",
+  "theme_color": "#2196f3",
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "ejcmaracanau.jpeg",
-      "sizes": "192x192 512x512",
-      "type": "image/jpeg",
+      "src": "https://cdn-icons-png.flaticon.com/512/25/25231.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "ejcmaracanau.jpeg",
+      "src": "https://cdn-icons-png.flaticon.com/512/25/25231.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ]
