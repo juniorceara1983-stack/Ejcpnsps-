@@ -54,14 +54,14 @@
             display: block; margin-top: 15px; font-weight: 700;
             font-size: 0.85rem; color: #475569; text-shadow: 1px 1px 1px rgba(0,0,0,0.05);
         }
-        input {
+        input:not([type="checkbox"]), select {
             width: 100%; padding: 12px; margin-top: 5px;
             border: 1px solid #e2e8f0; border-radius: 12px;
             font-size: 1rem; background: #ffffff;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.05);
             transition: all 0.3s;
         }
-        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        input:not([type="checkbox"]):focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         .photo-upload {
             background: #ffffff; border: 1px solid #e2e8f0; padding: 25px;
             text-align: center; border-radius: 15px; cursor: pointer; margin-top: 10px;
@@ -168,7 +168,7 @@
                     </div>
                     <div style="flex: 1;">
                         <label>RG <span style="font-size:0.7rem; color:#94a3b8; font-weight:400;">(ou CPF)</span></label>
-                        <input type="text" id="rg" maxlength="13" placeholder="00.000.000-0" oninput="mascaraRG(this)">
+                        <input type="text" id="rg" maxlength="20" placeholder="00.000.000-0" oninput="mascaraRG(this)">
                     </div>
                 </div>
 
@@ -191,6 +191,71 @@
                     <div style="flex: 1;"> <label>Bairro</label> <input type="text" id="bairro" required> </div>
                     <div style="flex: 1;"> <label>Cidade</label> <input type="text" id="cidade" value="Maracanaú" required> </div>
                 </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>Estado Civil</label>
+                        <select id="estadoCivil" required>
+                            <option value="">Selecione...</option>
+                            <option value="Solteiro(a)">Solteiro(a)</option>
+                            <option value="Casado(a)">Casado(a)</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Grau de Instrução</label>
+                        <select id="grauInstrucao" required>
+                            <option value="">Selecione...</option>
+                            <option value="Ensino Fundamental">Ensino Fundamental</option>
+                            <option value="Ensino Médio">Ensino Médio</option>
+                            <option value="Ensino Superior">Ensino Superior</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>Você trabalha atualmente?</label>
+                        <select id="trabalhaAtualmente" onchange="toggleTrabalhoAlert()" required>
+                            <option value="">Selecione...</option>
+                            <option value="Sim">Sim</option>
+                            <option value="Não">Não</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Participa de algum movimento de jovens?</label>
+                        <select id="participaMovimento" onchange="toggleMovimentoQual()" required>
+                            <option value="">Selecione...</option>
+                            <option value="Sim">Sim</option>
+                            <option value="Não">Não</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="alertaTrabalho" style="display:none; background:var(--danger); color:#fff; border-radius:10px; padding:10px 12px; margin-top:10px; font-size:0.88rem; font-weight:600;">
+                    ⚠️ Atenção: É necessário pedir dispensa do trabalho durante os 3 dias do Encontro.
+                </div>
+
+                <div id="campoQualMovimento" style="display:none;">
+                    <label>Qual?</label>
+                    <input type="text" id="qualMovimento" placeholder="Informe o movimento">
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>Convidado por</label>
+                        <input type="text" id="convidadoPor" placeholder="Nome de quem convidou">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>WhatsApp do Convidante</label>
+                        <input type="tel" id="whatsappConvidante" placeholder="(85) 9..." oninput="mascaraWhats(this)">
+                    </div>
+                </div>
+
+                <label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; font-weight:500;">
+                    <input type="checkbox" id="declaracaoPresenca" required style="margin-top:3px;">
+                    Declaro estar ciente que devo estar presente durante todos os horários dos 3 dias de Encontro.
+                </label>
 
                 <button type="button" class="btn-enviar" id="btnAcao" onclick="enviar()">ENVIAR INSCRIÇÃO</button>
             </form>
@@ -328,14 +393,12 @@
 
         function mascaraRG(i) {
             let raw = i.value.toUpperCase();
-            const trailingX = raw.endsWith('X') && raw.replace(/[^0-9]/g, '').length >= 7;
+            const trailingX = raw.endsWith('X');
             let v = raw.replace(/\D/g, "");
-            if (v.length > 9) v = v.substring(0, 9);
             v = v.replace(/(\d{2})(\d)/, "$1.$2");
             v = v.replace(/(\d{3})(\d)/, "$1.$2");
-            v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-            if (trailingX && !v.includes('-')) v += '-X';
-            else if (trailingX) v = v.replace(/-\d*$/, '-X');
+            v = v.replace(/(\d{3})(\d+)$/, "$1-$2");
+            if (trailingX) v = `${v}${v.includes('-') ? '' : '-'}X`;
             i.value = v;
         }
 
@@ -358,6 +421,19 @@
             if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
             display.textContent = `🎂 ${idade} anos completos`;
             display.style.display = 'block';
+        }
+
+        function toggleTrabalhoAlert() {
+            const mostrar = document.getElementById('trabalhaAtualmente').value === 'Sim';
+            document.getElementById('alertaTrabalho').style.display = mostrar ? 'block' : 'none';
+        }
+
+        function toggleMovimentoQual() {
+            const mostrar = document.getElementById('participaMovimento').value === 'Sim';
+            const campo = document.getElementById('campoQualMovimento');
+            const input = document.getElementById('qualMovimento');
+            campo.style.display = mostrar ? 'block' : 'none';
+            if (!mostrar) input.value = '';
         }
 
         function processarFoto(input) {
@@ -387,15 +463,34 @@
             const cpfInput = document.getElementById('cpf').value;
             const rgInput = document.getElementById('rg').value;
             const whatsapp = document.getElementById('whatsapp').value;
+            const declaracaoPresenca = document.getElementById('declaracaoPresenca').checked;
+            const trabalhaAtualmente = document.getElementById('trabalhaAtualmente').value;
+            const participaMovimento = document.getElementById('participaMovimento').value;
+
+            const restaurarBotaoEnvio = () => {
+                btn.innerText = "ENVIAR INSCRIÇÃO";
+                btn.disabled = false;
+                btn.style.backgroundColor = "var(--primary)";
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+            };
 
             if (!nome) return alert("Por favor, digite seu nome completo.");
             if (!cpfInput && !rgInput) return alert("Por favor, preencha o CPF ou o RG.");
             if (cpfInput && cpfInput.replace(/\D/g, '').length < 11) return alert("CPF incompleto. Verifique o preenchimento.");
             if (!whatsapp || whatsapp.length < 11) return alert("Por favor, preencha o WhatsApp com DDD.");
+            if (!trabalhaAtualmente) return alert("Por favor, informe se você trabalha atualmente.");
+            if (!participaMovimento) return alert("Por favor, informe se participa de movimento de jovens.");
+            if (participaMovimento === "Sim" && !document.getElementById('qualMovimento').value.trim()) return alert("Por favor, informe qual movimento você participa.");
+            if (!declaracaoPresenca) return alert("É obrigatório declarar ciência sobre a presença nos 3 dias.");
             if (!fotoProntaBase64) return alert("A foto é obrigatória para a ficha!");
 
             const cpfFinal = String(cpfInput);
-            btn.innerText = "VERIFICANDO..."; btn.disabled = true;
+            btn.innerText = "VERIFICANDO...";
+            btn.disabled = true;
+            btn.style.backgroundColor = "#94a3b8";
+            btn.style.opacity = "0.9";
+            btn.style.cursor = "not-allowed";
 
             try {
                 const response = await fetch(SCRIPT_URL);
@@ -409,7 +504,7 @@
                     });
                     if (jaCadastrado) {
                         mostrarModal("⚠️ Atenção:\nEste CPF já possui uma inscrição ativa para o EJC 2026.");
-                        btn.innerText = "ENVIAR INSCRIÇÃO"; btn.disabled = false;
+                        restaurarBotaoEnvio();
                         return;
                     }
                 }
@@ -423,6 +518,14 @@
                     "Rua": document.getElementById('rua').value,
                     "Bairro": document.getElementById('bairro').value,
                     "Cidade": document.getElementById('cidade').value,
+                    "Estado Civil": document.getElementById('estadoCivil').value,
+                    "Grau de Instrução": document.getElementById('grauInstrucao').value,
+                    "Trabalha Atualmente": trabalhaAtualmente,
+                    "Participa de Movimento": participaMovimento,
+                    "Qual Movimento": document.getElementById('qualMovimento').value,
+                    "Convidado por": document.getElementById('convidadoPor').value,
+                    "WhatsApp do Convidante": document.getElementById('whatsappConvidante').value,
+                    "Declaração Presença": declaracaoPresenca ? "Sim" : "Não",
                     "foto": fotoProntaBase64
                 };
 
@@ -434,7 +537,7 @@
             } catch (e) {
                 console.error(e);
                 alert("Erro ao conectar. Tente novamente.");
-                btn.innerText = "ENVIAR INSCRIÇÃO"; btn.disabled = false;
+                restaurarBotaoEnvio();
             }
         }
 
@@ -560,7 +663,14 @@
                     ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))],
                     ["WHATSAPP:", obter(p, 'whatsapp')],
                     ["BAIRRO:", obter(p, 'Bairro')],
-                    ["CIDADE:", obter(p, 'Cidade')]
+                    ["CIDADE:", obter(p, 'Cidade')],
+                    ["ESTADO CIVIL:", obter(p, 'Estado Civil')],
+                    ["INSTRUÇÃO:", obter(p, 'Grau de Instrução')],
+                    ["TRABALHA:", obter(p, 'Trabalha Atualmente')],
+                    ["MOVIMENTO:", obter(p, 'Participa de Movimento')],
+                    ["QUAL MOV.:", obter(p, 'Qual Movimento')],
+                    ["CONVIDADO POR:", obter(p, 'Convidado por')],
+                    ["ZAP CONVIDANTE:", obter(p, 'WhatsApp do Convidante')]
                 ];
                 let y = 45;
                 campos.forEach(campo => {
@@ -611,7 +721,7 @@
                 const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
                 const botaoFoto = (foto === FOTO_SEM_PERFIL)
                     ? `<span style="font-size:0.7rem; color:#94a3b8;">(SEM FOTO)</span>`
-                    : `<button class="btn btn-photo" onclick="verFoto(${p.row})"><i class="fas fa-camera"></i> FOTO</button>`;
+                    : `<button class="btn btn-photo" onclick="verFoto('${p.row}')"><i class="fas fa-camera"></i> FOTO</button>`;
                 container.innerHTML += `
                     <div class="card-jovem">
                         <div style="display:flex; justify-content:space-between; align-items:start;">
@@ -662,7 +772,14 @@
                 ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))],
                 ["WHATSAPP:", obter(p, 'whatsapp')],
                 ["BAIRRO:", obter(p, 'Bairro')],
-                ["CIDADE:", obter(p, 'Cidade')]
+                ["CIDADE:", obter(p, 'Cidade')],
+                ["ESTADO CIVIL:", obter(p, 'Estado Civil')],
+                ["INSTRUÇÃO:", obter(p, 'Grau de Instrução')],
+                ["TRABALHA:", obter(p, 'Trabalha Atualmente')],
+                ["MOVIMENTO:", obter(p, 'Participa de Movimento')],
+                ["QUAL MOV.:", obter(p, 'Qual Movimento')],
+                ["CONVIDADO POR:", obter(p, 'Convidado por')],
+                ["ZAP CONVIDANTE:", obter(p, 'WhatsApp do Convidante')]
             ];
             let y = 45;
             campos.forEach(campo => {
@@ -679,10 +796,17 @@
             doc.text("RELATÓRIO GERAL EJC 2026", 14, 15);
             const linhas = inscritos.map(p => [
                 obter(p, 'Nome'), obter(p, 'CPF'), obter(p, 'RG'),
-                formatarIdadeCompleta(obter(p, 'Idade')), obter(p, 'whatsapp'), obter(p, 'Bairro')
+                formatarIdadeCompleta(obter(p, 'Idade')),
+                obter(p, 'whatsapp'),
+                obter(p, 'Bairro'),
+                obter(p, 'Estado Civil'),
+                obter(p, 'Grau de Instrução'),
+                obter(p, 'Trabalha Atualmente'),
+                obter(p, 'Participa de Movimento'),
+                obter(p, 'Convidado por')
             ]);
             doc.autoTable({
-                head: [["NOME", "CPF", "RG", "IDADE", "ZAP", "BAIRRO"]],
+                head: [["NOME", "CPF", "RG", "IDADE", "ZAP", "BAIRRO", "ESTADO CIVIL", "INSTRUÇÃO", "TRABALHA", "MOVIMENTO", "CONVIDADO POR"]],
                 body: linhas, startY: 25, headStyles: { fillColor: [30, 41, 59] }
             });
             doc.save("Relatorio_EJC_2026.pdf");

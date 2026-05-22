@@ -236,10 +236,18 @@
                 const campos = [
                     ["NOME:", obter(p, 'Nome').toUpperCase()],
                     ["CPF:", obter(p, 'CPF')],
+                    ["RG:", obter(p, 'RG')],
                     ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))],
                     ["WHATSAPP:", obter(p, 'whatsapp')],
                     ["BAIRRO:", obter(p, 'Bairro')],
-                    ["CIDADE:", obter(p, 'Cidade')]
+                    ["CIDADE:", obter(p, 'Cidade')],
+                    ["ESTADO CIVIL:", obter(p, 'Estado Civil')],
+                    ["INSTRUÇÃO:", obter(p, 'Grau de Instrução')],
+                    ["TRABALHA:", obter(p, 'Trabalha Atualmente')],
+                    ["MOVIMENTO:", obter(p, 'Participa de Movimento')],
+                    ["QUAL MOV.:", obter(p, 'Qual Movimento')],
+                    ["CONVIDADO POR:", obter(p, 'Convidado por')],
+                    ["ZAP CONVIDANTE:", obter(p, 'WhatsApp do Convidante')]
                 ];
 
                 let y = 45;
@@ -299,7 +307,7 @@
                         <div style="display:flex; justify-content:space-between; align-items:start;">
                             <div>
                                 <b style="text-transform:uppercase; color:var(--primary);">${obter(p, 'Nome')}</b>
-                                <p style="font-size:0.85rem; color:#64748b; margin:5px 0;">CPF: ${obter(p, 'CPF')} | <b>${obter(p, 'Bairro')}</b></p>
+                                <p style="font-size:0.85rem; color:#64748b; margin:5px 0;">CPF: ${obter(p, 'CPF')} | RG: ${obter(p, 'RG')} | <b>${obter(p, 'Bairro')}</b></p>
                                 <p style="font-size:0.8rem; color:var(--accent); font-weight:600;">${formatarIdadeCompleta(obter(p, 'Idade'))}</p>
                             </div>
                             <button class="btn btn-delete" onclick="deletarRegistro(${p.row})"><i class="fas fa-trash-alt"></i></button>
@@ -340,7 +348,22 @@
             }
             doc.setFontSize(12);
             doc.setFont(undefined, 'bold');
-            const campos = [ ["NOME:", obter(p, 'Nome')], ["CPF:", obter(p, 'CPF')], ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))], ["WHATSAPP:", obter(p, 'whatsapp')], ["BAIRRO:", obter(p, 'Bairro')], ["CIDADE:", obter(p, 'Cidade')] ];
+            const campos = [
+                ["NOME:", obter(p, 'Nome')],
+                ["CPF:", obter(p, 'CPF')],
+                ["RG:", obter(p, 'RG')],
+                ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))],
+                ["WHATSAPP:", obter(p, 'whatsapp')],
+                ["BAIRRO:", obter(p, 'Bairro')],
+                ["CIDADE:", obter(p, 'Cidade')],
+                ["ESTADO CIVIL:", obter(p, 'Estado Civil')],
+                ["INSTRUÇÃO:", obter(p, 'Grau de Instrução')],
+                ["TRABALHA:", obter(p, 'Trabalha Atualmente')],
+                ["MOVIMENTO:", obter(p, 'Participa de Movimento')],
+                ["QUAL MOV.:", obter(p, 'Qual Movimento')],
+                ["CONVIDADO POR:", obter(p, 'Convidado por')],
+                ["ZAP CONVIDANTE:", obter(p, 'WhatsApp do Convidante')]
+            ];
             let y = 45;
             campos.forEach(campo => {
                 doc.setFont(undefined, 'bold'); doc.text(campo[0], 20, y);
@@ -354,8 +377,25 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'mm', 'a4');
             doc.text("RELATÓRIO GERAL EJC 2026", 14, 15);
-            const linhas = inscritos.map(p => [ obter(p, 'Nome'), obter(p, 'CPF'), formatarIdadeCompleta(obter(p, 'Idade')), obter(p, 'whatsapp'), obter(p, 'Bairro') ]);
-            doc.autoTable({ head: [["NOME", "CPF", "IDADE", "ZAP", "BAIRRO"]], body: linhas, startY: 25, headStyles: { fillColor: [30, 41, 59] } });
+            const linhas = inscritos.map(p => [
+                obter(p, 'Nome'),
+                obter(p, 'CPF'),
+                obter(p, 'RG'),
+                formatarIdadeCompleta(obter(p, 'Idade')),
+                obter(p, 'whatsapp'),
+                obter(p, 'Bairro'),
+                obter(p, 'Estado Civil'),
+                obter(p, 'Grau de Instrução'),
+                obter(p, 'Trabalha Atualmente'),
+                obter(p, 'Participa de Movimento'),
+                obter(p, 'Convidado por')
+            ]);
+            doc.autoTable({
+                head: [["NOME", "CPF", "RG", "IDADE", "ZAP", "BAIRRO", "ESTADO CIVIL", "INSTRUÇÃO", "TRABALHA", "MOVIMENTO", "CONVIDADO POR"]],
+                body: linhas,
+                startY: 25,
+                headStyles: { fillColor: [30, 41, 59] }
+            });
             doc.save("Relatorio_EJC_2026.pdf");
         }
     </script>
