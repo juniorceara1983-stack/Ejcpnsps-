@@ -86,7 +86,7 @@
                 </div>
                 <div style="flex: 1;">
                     <label>RG <span style="font-size:0.7rem; color:#94a3b8; font-weight:400;">(ou CPF)</span></label>
-                    <input type="text" id="rg" maxlength="12" placeholder="00.000.000-0" oninput="mascaraRG(this)">
+                    <input type="text" id="rg" maxlength="13" placeholder="00.000.000-0" oninput="mascaraRG(this)">
                 </div>
             </div>
 
@@ -157,10 +157,15 @@
         }
 
         function mascaraRG(i) {
-            let v = i.value.replace(/\D/g, "");
+            let raw = i.value.toUpperCase();
+            const trailingX = raw.endsWith('X') && raw.replace(/[^0-9]/g, '').length >= 7;
+            let v = raw.replace(/\D/g, "");
+            if (v.length > 9) v = v.substring(0, 9);
             v = v.replace(/(\d{2})(\d)/, "$1.$2");
             v = v.replace(/(\d{3})(\d)/, "$1.$2");
             v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+            if (trailingX && !v.includes('-')) v += '-X';
+            else if (trailingX) v = v.replace(/-\d*$/, '-X');
             i.value = v;
         }
 

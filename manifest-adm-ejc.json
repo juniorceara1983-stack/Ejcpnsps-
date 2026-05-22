@@ -1,22 +1,23 @@
 {
-  "name": "Teste EJC",
-  "short_name": "Teste",
+  "name": "EJC ADM - PNSPS Maracanaú",
+  "short_name": "EJC ADM",
+  "description": "Painel de Gestão EJC PNSPS Maracanaú",
   "start_url": "./AdmEJC.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2196f3",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e293b",
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/25/25231.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "ejcmaracanau.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/25/25231.png",
+      "src": "ejcmaracanau.jpeg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "maskable"
     }
   ]

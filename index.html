@@ -168,7 +168,7 @@
                     </div>
                     <div style="flex: 1;">
                         <label>RG <span style="font-size:0.7rem; color:#94a3b8; font-weight:400;">(ou CPF)</span></label>
-                        <input type="text" id="rg" maxlength="12" placeholder="00.000.000-0" oninput="mascaraRG(this)">
+                        <input type="text" id="rg" maxlength="13" placeholder="00.000.000-0" oninput="mascaraRG(this)">
                     </div>
                 </div>
 
@@ -234,11 +234,19 @@
 
             <div class="bairros-section">
                 <label style="font-size: 0.8rem; color: #64748b; font-weight: bold; display: block; margin-bottom: 8px;">
-                    <i class="fas fa-file-download"></i> BAIXAR FICHAS POR BAIRRO
+                    <i class="fas fa-map-marker-alt"></i> FICHAS POR BAIRRO
                 </label>
-                <select id="selectBairros" class="select-bairro" onchange="gerarRelatorioBairro(this.value)">
+                <select id="selectBairros" class="select-bairro" onchange="selecionarBairro(this.value)">
                     <option value="">Selecione um bairro...</option>
                 </select>
+                <div id="btnsBairro" style="display:none; gap:8px; margin-top:10px;">
+                    <button class="btn-outline-adm" style="flex:1; cursor:pointer; font-size:0.85rem;" onclick="visualizarListaBairro()">
+                        <i class="fas fa-eye"></i> VER LISTA
+                    </button>
+                    <button class="btn-adm btn-adm-primary" style="flex:1; margin:0; padding:10px; font-size:0.85rem;" onclick="baixarPDFBairro()">
+                        <i class="fas fa-file-download"></i> BAIXAR PDF
+                    </button>
+                </div>
             </div>
 
             <input type="text" id="searchBox" placeholder="🔍 Pesquisar por nome, CPF ou bairro..." onkeyup="renderizar()">
@@ -263,12 +271,27 @@
         <p style="color:white; margin-top:15px;">Toque para fechar</p>
     </div>
 
+    <!-- Modal preview lista por bairro -->
+    <div id="modalBairro" style="display:none; position:fixed; z-index:2500; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; flex-direction:column;">
+        <div style="background:white; padding:20px 25px; border-radius:24px; width:92%; max-width:500px; max-height:82vh; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 id="tituloModalBairro" style="margin:0; color:var(--dark); font-size:1rem;"></h3>
+                <button onclick="document.getElementById('modalBairro').style.display='none'" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#94a3b8; line-height:1;">✕</button>
+            </div>
+            <div id="listaModalBairro" style="overflow-y:auto; flex:1; border:1px solid #f1f5f9; border-radius:12px;"></div>
+            <button class="btn-adm btn-adm-primary" style="margin-top:12px;" onclick="baixarPDFBairro(); document.getElementById('modalBairro').style.display='none'">
+                <i class="fas fa-file-download"></i> BAIXAR PDF DESTE BAIRRO
+            </button>
+        </div>
+    </div>
+
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
         const FOTO_SEM_PERFIL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACOAQMAAAC2d5YjAAAAA1BMVEXm5uY2W5X3AAAAG0lEQVRIiWNgGAWjYBSMglEwCkbBKBgF9AMAAAYAAZtUq70AAAAASUVORK5CYII=";
         let fotoProntaBase64 = "";
         let inscritos = [];
         let ordemAtual = 'nome';
+        let bairroSelecionado = '';
 
         const mensagensEJC = [
             "📖 'Ninguém te despreze por seres jovem; mas sê exemplo para os fiéis.' (1 Timóteo 4:12)",
@@ -304,10 +327,15 @@
         }
 
         function mascaraRG(i) {
-            let v = i.value.replace(/\D/g, "");
+            let raw = i.value.toUpperCase();
+            const trailingX = raw.endsWith('X') && raw.replace(/[^0-9]/g, '').length >= 7;
+            let v = raw.replace(/\D/g, "");
+            if (v.length > 9) v = v.substring(0, 9);
             v = v.replace(/(\d{2})(\d)/, "$1.$2");
             v = v.replace(/(\d{3})(\d)/, "$1.$2");
             v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+            if (trailingX && !v.includes('-')) v += '-X';
+            else if (trailingX) v = v.replace(/-\d*$/, '-X');
             i.value = v;
         }
 
@@ -485,6 +513,34 @@
 
         function ordenar(tipo) { ordemAtual = tipo; renderizar(); }
 
+        function selecionarBairro(valor) {
+            bairroSelecionado = valor;
+            const btns = document.getElementById('btnsBairro');
+            btns.style.display = valor ? 'flex' : 'none';
+        }
+
+        function visualizarListaBairro() {
+            if (!bairroSelecionado) return;
+            const jovens = inscritos.filter(p => obter(p, 'Bairro').toUpperCase().trim() === bairroSelecionado.toUpperCase());
+            document.getElementById('tituloModalBairro').textContent = `${bairroSelecionado} — ${jovens.length} jovem(ns)`;
+            let html = '';
+            jovens.forEach((p, idx) => {
+                html += `<div style="padding:10px 12px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:0.8rem; color:#94a3b8; min-width:24px; font-weight:700;">${idx + 1}.</span>
+                    <div>
+                        <b style="color:var(--dark); font-size:0.9rem;">${obter(p, 'Nome').toUpperCase()}</b>
+                        <div style="font-size:0.75rem; color:#64748b;">${formatarIdadeCompleta(obter(p, 'Idade'))} | ${obter(p, 'whatsapp')}</div>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('listaModalBairro').innerHTML = html || '<p style="color:#94a3b8; text-align:center; padding:20px;">Nenhum jovem encontrado.</p>';
+            document.getElementById('modalBairro').style.display = 'flex';
+        }
+
+        function baixarPDFBairro() {
+            gerarRelatorioBairro(bairroSelecionado);
+        }
+
         function gerarRelatorioBairro(nomeBairro) {
             if (!nomeBairro) return;
             const jovensDoBairro = inscritos.filter(p => obter(p, 'Bairro').toUpperCase().trim() === nomeBairro.toUpperCase());
@@ -515,6 +571,7 @@
             });
             doc.save(`Fichas_EJC_${nomeBairro}.pdf`);
             document.getElementById('selectBairros').value = "";
+            selecionarBairro('');
         }
 
         function renderizar() {

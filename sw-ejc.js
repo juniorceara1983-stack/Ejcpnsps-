@@ -1,7 +1,8 @@
-const CACHE_NAME = 'ejc-teste-v9';
+const CACHE_NAME = 'ejc-adm-v2';
 const assets = [
   './AdmEJC.html',
-  './manifest-adm-ejc.json'
+  './manifest-adm-ejc.json',
+  './ejcmaracanau.jpeg'
 ];
 
 self.addEventListener('install', (e) => {
