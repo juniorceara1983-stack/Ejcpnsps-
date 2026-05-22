@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EJC PNSPS - Maracanaú</title>
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(() => {
+                    console.log('SW registrado!');
+                }).catch(err => console.log('Erro SW:', err));
+            });
+        }
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            setTimeout(() => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+                }
+            }, 3000);
+        });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --dark: #1e293b;
+            --accent: #2563eb;
+            --danger: #ef4444;
+            --bg: #f1f5f9;
+            --pnsps: #e6e0f3;
+            --success: #16a34a;
+        }
+
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 15px; margin: 0; }
+
+        /* ─── PRÉ-FICHA ─── */
+        #fichaView .container {
+            max-width: 450px; margin: auto; background: white; padding: 25px;
+            border-radius: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+            border-top: 10px solid var(--primary); position: relative;
+        }
+        .header { text-align: center; margin-bottom: 25px; }
+        .logo { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid var(--pnsps); margin-bottom: 10px; }
+        label {
+            display: block; margin-top: 15px; font-weight: 700;
+            font-size: 0.85rem; color: #475569; text-shadow: 1px 1px 1px rgba(0,0,0,0.05);
+        }
+        input {
+            width: 100%; padding: 12px; margin-top: 5px;
+            border: 1px solid #e2e8f0; border-radius: 12px;
+            font-size: 1rem; background: #ffffff;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+        }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .photo-upload {
+            background: #ffffff; border: 1px solid #e2e8f0; padding: 25px;
+            text-align: center; border-radius: 15px; cursor: pointer; margin-top: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            transition: transform 0.2s;
+        }
+        .photo-upload:active { transform: scale(0.98); }
+        #preview { width: 120px; height: 160px; border-radius: 8px; margin-top: 10px; display: none; object-fit: cover; border: 2px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-enviar { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1rem; margin-top: 25px; cursor: pointer; box-shadow: 0 4px 6px rgba(37,99,235,0.2); }
+        .btn-enviar:disabled { background: #94a3b8; }
+
+        /* ─── BOTÃO CADEADO ─── */
+        #lockBtn {
+            position: absolute; top: 18px; right: 18px;
+            background: none; border: none; cursor: pointer;
+            font-size: 1.4rem; line-height: 1; opacity: 0.45;
+            transition: opacity 0.2s, transform 0.2s;
+            padding: 4px;
+        }
+        #lockBtn:hover { opacity: 1; transform: scale(1.15); }
+
+        /* ─── MODAL SUCESSO PRÉ-FICHA ─── */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 24px; width: 85%; max-width: 340px; text-align: center; }
+        .modal-img { width: 130px; height: 130px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 4px solid var(--primary); }
+
+        /* ─── MODAL LOGIN ADMIN ─── */
+        #adminLoginModal {
+            display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); align-items: center; justify-content: center;
+        }
+        .admin-login-box {
+            background: white; padding: 35px 30px; border-radius: 24px;
+            width: 88%; max-width: 320px; text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+        }
+        .admin-login-box h2 { margin: 10px 0 5px; color: var(--dark); font-size: 1.3rem; }
+        .admin-login-box p { font-size: 0.8rem; color: #94a3b8; margin-bottom: 20px; }
+        #senhaAdmin { width: 100%; padding: 14px; border: 1.5px solid #e2e8f0; border-radius: 12px; margin-bottom: 12px; font-size: 1rem; }
+        .btn-cancel { background: none; border: none; color: #94a3b8; font-size: 0.85rem; cursor: pointer; margin-top: 8px; }
+
+        /* ─── ADMIN VIEW ─── */
+        #adminView { display: none; }
+        .adm-container { max-width: 900px; margin: auto; }
+        .adm-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-voltar { background: none; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 8px 16px; cursor: pointer; color: var(--accent); font-weight: 600; font-size: 0.85rem; }
+
+        /* Bairros section */
+        .bairros-section { background: white; padding: 15px; border-radius: 16px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .select-bairro {
+            width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #e2e8f0;
+            font-size: 1rem; color: var(--dark); font-weight: 600; cursor: pointer; outline: none;
+            background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'%3E%3C/path%3E%3C/svg%3E") no-repeat right 12px center;
+            appearance: none;
+        }
+        .select-bairro:focus { border-color: var(--accent); }
+
+        .btn-adm { border: none; border-radius: 12px; padding: 16px; font-weight: bold; cursor: pointer; display: block; width: 100%; text-align: center; text-decoration: none; margin-bottom: 15px; }
+        .btn-adm-primary { background: var(--dark); color: white; }
+        .btn-outline-adm { background: white; color: var(--accent); border: 2px solid var(--accent); padding: 10px; margin-bottom: 10px; border-radius: 10px; }
+        .btn-photo { background: #f59e0b; color: white; padding: 10px; border-radius: 8px; font-size: 0.75rem; border: none; cursor: pointer; }
+        .btn-delete { background: #fee2e2; color: var(--danger); padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 45px; margin: 0; border: none; cursor: pointer; }
+
+        .card-jovem { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; }
+        #searchBox { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #e2e8f0; margin-bottom: 20px; font-size: 1rem; outline: none; }
+
+        /* Modal foto expandida */
+        .modal-foto { display: none; position: fixed; z-index: 3000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; flex-direction: column; }
+        .modal-foto img { max-width: 90%; max-height: 80%; border: 4px solid white; border-radius: 8px; }
+
+        .signature { text-align: center; margin-top: 20px; font-size: 0.75rem; color: #94a3b8; font-weight: 500; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+    <!-- ═══════════════════════════════ PRÉ-FICHA VIEW ═══════════════════════════════ -->
+    <div id="fichaView">
+        <div class="container">
+
+            <!-- Botão Cadeado -->
+            <button id="lockBtn" onclick="abrirLoginAdmin()" title="Acesso Admin">🔒</button>
+
+            <div class="header">
+                <img src="ejcmaracanau.jpeg" class="logo">
+                <h1 style="font-size:1.3rem; color:var(--primary); margin: 5px 0;">PRÉ-FICHA EJC</h1>
+                <p style="font-size: 0.8rem; color: #94a3b8;">PNSPS - Maracanaú</p>
+            </div>
+
+            <form id="formEJC">
+                <label>Sua Foto (Estilo 3x4)</label>
+                <div class="photo-upload" onclick="document.getElementById('inputFoto').click()">
+                    <span id="txtFoto" style="color:var(--primary); font-weight:bold; font-size: 0.9rem;">📸 Clique para tirar foto ou galeria</span>
+                    <input type="file" id="inputFoto" accept="image/*" style="display:none" onchange="processarFoto(this)">
+                    <center><img id="preview"></center>
+                </div>
+
+                <label>Nome Completo</label>
+                <input type="text" id="nome" required>
+
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>CPF <span style="font-size:0.7rem; color:#94a3b8; font-weight:400;">(ou RG)</span></label>
+                        <input type="text" id="cpf" maxlength="14" placeholder="000.000.000-00" oninput="mascaraCPF(this)">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>RG <span style="font-size:0.7rem; color:#94a3b8; font-weight:400;">(ou CPF)</span></label>
+                        <input type="text" id="rg" maxlength="12" placeholder="00.000.000-0" oninput="mascaraRG(this)">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>Data Nasc.</label>
+                        <input type="date" id="nascimento" required onchange="calcularIdadeForm()">
+                        <div id="idadeDisplay" style="font-size:0.82rem; color:#2563eb; font-weight:700; margin-top:5px; display:none;"></div>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>WhatsApp</label>
+                        <input type="tel" id="whatsapp" placeholder="(85) 9..." oninput="mascaraWhats(this)" required>
+                    </div>
+                </div>
+
+                <label>Rua e Número</label>
+                <input type="text" id="rua">
+
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;"> <label>Bairro</label> <input type="text" id="bairro" required> </div>
+                    <div style="flex: 1;"> <label>Cidade</label> <input type="text" id="cidade" value="Maracanaú" required> </div>
+                </div>
+
+                <button type="button" class="btn-enviar" id="btnAcao" onclick="enviar()">ENVIAR INSCRIÇÃO</button>
+            </form>
+
+            <div class="signature">By: Jr&amp;Iz</div>
+        </div>
+
+        <!-- Modal de sucesso pré-ficha -->
+        <div id="meuModal" class="modal">
+            <div class="modal-content">
+                <img src="IMG_20260401_014539.jpg" class="modal-img">
+                <p id="msgTexto" style="font-weight: 500; color: #1e293b; white-space: pre-line; line-height: 1.4;"></p>
+                <button class="btn-enviar" onclick="location.reload()">ENTENDIDO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════ MODAL LOGIN ADMIN ═══════════════════════════════ -->
+    <div id="adminLoginModal">
+        <div class="admin-login-box">
+            <div style="font-size:2.5rem;">🔐</div>
+            <h2>EJC ADM</h2>
+            <p>Área restrita. Digite a senha de acesso.</p>
+            <input type="password" id="senhaAdmin" placeholder="Senha" onkeydown="if(event.key==='Enter') logarAdmin()">
+            <button class="btn-enviar" onclick="logarAdmin()">ENTRAR</button>
+            <br>
+            <button class="btn-cancel" onclick="fecharLoginAdmin()">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════ ADMIN VIEW ═══════════════════════════════ -->
+    <div id="adminView">
+        <div class="adm-container">
+            <div class="adm-topbar">
+                <h1 style="font-size:1.5rem; color:var(--dark);">Gestão EJC 2026</h1>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button onclick="carregarDados()" style="background:none; border:none; cursor:pointer; color:var(--accent)"><i class="fas fa-sync-alt fa-2x"></i></button>
+                    <button class="btn-voltar" onclick="voltarFicha()">🔓 Sair</button>
+                </div>
+            </div>
+
+            <div class="bairros-section">
+                <label style="font-size: 0.8rem; color: #64748b; font-weight: bold; display: block; margin-bottom: 8px;">
+                    <i class="fas fa-file-download"></i> BAIXAR FICHAS POR BAIRRO
+                </label>
+                <select id="selectBairros" class="select-bairro" onchange="gerarRelatorioBairro(this.value)">
+                    <option value="">Selecione um bairro...</option>
+                </select>
+            </div>
+
+            <input type="text" id="searchBox" placeholder="🔍 Pesquisar por nome, CPF ou bairro..." onkeyup="renderizar()">
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn-outline-adm" style="flex:1; cursor:pointer;" onclick="ordenar('nome')"><i class="fas fa-sort-alpha-down"></i> Nome</button>
+                <button class="btn-outline-adm" style="flex:1; cursor:pointer;" onclick="ordenar('idade')"><i class="fas fa-sort-numeric-down"></i> Idade</button>
+            </div>
+
+            <button class="btn-adm btn-adm-primary" onclick="gerarRelatorioGeral()">BAIXAR RELATÓRIO GERAL (PDF)</button>
+
+            <div id="listaContainer">Sincronizando...</div>
+
+            <div class="signature">By: Jr&amp;Iz</div>
+            <div class="signature">Deus abençoe a todos!</div>
+        </div>
+    </div>
+
+    <!-- Modal foto expandida (admin) -->
+    <div id="modalFoto" class="modal-foto" onclick="this.style.display='none'">
+        <img id="imgExpandida" src="">
+        <p style="color:white; margin-top:15px;">Toque para fechar</p>
+    </div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzo_A9kOeOpWkYXWREznU7zPE9UDQVLah2fI5CLv_Yl-aRCiZkegTnw8uRa6fTb78ny/exec";
+        const FOTO_SEM_PERFIL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACOAQMAAAC2d5YjAAAAA1BMVEXm5uY2W5X3AAAAG0lEQVRIiWNgGAWjYBSMglEwCkbBKBgF9AMAAAYAAZtUq70AAAAASUVORK5CYII=";
+        let fotoProntaBase64 = "";
+        let inscritos = [];
+        let ordemAtual = 'nome';
+
+        const mensagensEJC = [
+            "📖 'Ninguém te despreze por seres jovem; mas sê exemplo para os fiéis.' (1 Timóteo 4:12)",
+            "📖 'Tudo posso naquele que me fortalece.' (Filipenses 4:13)",
+            "📖 'O Senhor é o meu pastor, nada me faltará.' (Salmo 23:1)",
+            "📖 'Ide por todo o mundo e pregai o Evangelho a toda criatura.' (Marcos 16:15)",
+            "📖 'Vós sois o sal da terra e a luz do mundo.' (Mateus 5:13-14)",
+            "📖 'Eu sou o caminho, a verdade e a vida.' (João 14:6)",
+            "📖 'Seja forte e corajoso! Não se apavore nem desanime.' (Josué 1:9)",
+            "🙏 Oração: Senhor, fazei de mim um instrumento de vossa paz.",
+            "🙏 Oração: Santo Anjo do Senhor, meu zeloso guardador, iluminai-me!",
+            "🙏 Oração: Maria, passa na frente e guia cada passo do meu encontro.",
+            "✨ Missão: Reze uma Ave-Maria hoje por outro jovem que também se inscreveu.",
+            "✨ Missão: Sorria para alguém hoje e mostre a alegria de ser cristão.",
+            "✨ Missão: Leia o Evangelho de hoje antes de dormir.",
+            "🔥 Engajamento: O EJC é um serviço de amor. Prepare o seu coração!",
+            "🔥 Engajamento: Você não foi escolhido por acaso. Deus tem um plano para você!",
+            "🔥 Engajamento: Ser jovem cristão é ser revolucionário no amor.",
+            "🕊️ 'Onde houver ódio, que eu leve o amor.' (São Francisco de Assis)",
+            "🕊️ 'A medida do amor é amar sem medida.' (Santo Agostinho)",
+            "📖 'Buscai primeiro o Reino de Deus e tudo o mais vos será acrescentado.' (Mateus 6:33)",
+            "📖 'O amor é paciente, o amor é bondoso.' (1 Coríntios 13:4)"
+        ];
+
+        /* ══════════════ PRÉ-FICHA FUNCTIONS ══════════════ */
+
+        function mascaraCPF(i) {
+            let v = i.value.replace(/\D/g, "");
+            v = v.replace(/(\d{3})(\d)/, "$1.$2");
+            v = v.replace(/(\d{3})(\d)/, "$1.$2");
+            v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+            i.value = v;
+        }
+
+        function mascaraRG(i) {
+            let v = i.value.replace(/\D/g, "");
+            v = v.replace(/(\d{2})(\d)/, "$1.$2");
+            v = v.replace(/(\d{3})(\d)/, "$1.$2");
+            v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+            i.value = v;
+        }
+
+        function mascaraWhats(i) {
+            let v = i.value.replace(/\D/g, "");
+            v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+            v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+            i.value = v;
+        }
+
+        function calcularIdadeForm() {
+            const nascimento = document.getElementById('nascimento').value;
+            const display = document.getElementById('idadeDisplay');
+            if (!nascimento) { display.style.display = 'none'; return; }
+            const hoje = new Date();
+            const nasc = new Date(nascimento);
+            if (isNaN(nasc)) { display.style.display = 'none'; return; }
+            let idade = hoje.getFullYear() - nasc.getFullYear();
+            const m = hoje.getMonth() - nasc.getMonth();
+            if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+            display.textContent = `🎂 ${idade} anos completos`;
+            display.style.display = 'block';
+        }
+
+        function processarFoto(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 240; canvas.height = 320;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, 240, 320);
+                        fotoProntaBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                        document.getElementById('preview').src = fotoProntaBase64;
+                        document.getElementById('preview').style.display = 'block';
+                        document.getElementById('txtFoto').innerText = "Foto Ajustada ✅";
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function enviar() {
+            const btn = document.getElementById('btnAcao');
+            const nome = document.getElementById('nome').value;
+            const cpfInput = document.getElementById('cpf').value;
+            const rgInput = document.getElementById('rg').value;
+            const whatsapp = document.getElementById('whatsapp').value;
+
+            if (!nome) return alert("Por favor, digite seu nome completo.");
+            if (!cpfInput && !rgInput) return alert("Por favor, preencha o CPF ou o RG.");
+            if (cpfInput && cpfInput.replace(/\D/g, '').length < 11) return alert("CPF incompleto. Verifique o preenchimento.");
+            if (!whatsapp || whatsapp.length < 11) return alert("Por favor, preencha o WhatsApp com DDD.");
+            if (!fotoProntaBase64) return alert("A foto é obrigatória para a ficha!");
+
+            const cpfFinal = String(cpfInput);
+            btn.innerText = "VERIFICANDO..."; btn.disabled = true;
+
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const lista = await response.json();
+
+                if (cpfFinal && cpfFinal.replace(/\D/g, '').length === 11) {
+                    const jaCadastrado = lista.find(p => {
+                        const cpfNaPlanilha = String(p.CPF || p.cpf || p[1] || "").replace(/\D/g, '');
+                        const cpfDigitadoLimpo = cpfFinal.replace(/\D/g, '');
+                        return cpfNaPlanilha === cpfDigitadoLimpo;
+                    });
+                    if (jaCadastrado) {
+                        mostrarModal("⚠️ Atenção:\nEste CPF já possui uma inscrição ativa para o EJC 2026.");
+                        btn.innerText = "ENVIAR INSCRIÇÃO"; btn.disabled = false;
+                        return;
+                    }
+                }
+
+                const dados = {
+                    "Nome": nome,
+                    "CPF": cpfFinal,
+                    "RG": rgInput,
+                    "Idade": document.getElementById('nascimento').value,
+                    "whatsapp": whatsapp,
+                    "Rua": document.getElementById('rua').value,
+                    "Bairro": document.getElementById('bairro').value,
+                    "Cidade": document.getElementById('cidade').value,
+                    "foto": fotoProntaBase64
+                };
+
+                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(dados) });
+
+                const msgAleatoria = mensagensEJC[Math.floor(Math.random() * mensagensEJC.length)];
+                mostrarModal("Olá! Eu sou o Padre Luciano. que Deus te abençoe.\nSua Pré-inscrição foi recebida com sucesso!\n\nSua missão agora é:\n" + msgAleatoria);
+
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao conectar. Tente novamente.");
+                btn.innerText = "ENVIAR INSCRIÇÃO"; btn.disabled = false;
+            }
+        }
+
+        function mostrarModal(txt) {
+            document.getElementById('msgTexto').innerText = txt;
+            document.getElementById('meuModal').style.display = 'flex';
+        }
+
+        /* ══════════════ ADMIN LOGIN ══════════════ */
+
+        function abrirLoginAdmin() {
+            document.getElementById('senhaAdmin').value = '';
+            document.getElementById('adminLoginModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('senhaAdmin').focus(), 100);
+        }
+
+        function fecharLoginAdmin() {
+            document.getElementById('adminLoginModal').style.display = 'none';
+        }
+
+        function logarAdmin() {
+            if (document.getElementById('senhaAdmin').value === "ejc2026") {
+                fecharLoginAdmin();
+                document.getElementById('fichaView').style.display = 'none';
+                document.getElementById('adminView').style.display = 'block';
+                carregarDados();
+            } else {
+                alert("Senha incorreta!");
+                document.getElementById('senhaAdmin').value = '';
+                document.getElementById('senhaAdmin').focus();
+            }
+        }
+
+        function voltarFicha() {
+            document.getElementById('adminView').style.display = 'none';
+            document.getElementById('fichaView').style.display = 'block';
+        }
+
+        /* ══════════════ ADMIN FUNCTIONS ══════════════ */
+
+        async function carregarDados() {
+            const container = document.getElementById('listaContainer');
+            container.innerHTML = "Atualizando dados...";
+            try {
+                const res = await fetch(SCRIPT_URL);
+                const rawData = await res.json();
+                inscritos = rawData.map((item, index) => ({ ...item, row: index + 2 }));
+                renderizar();
+            } catch (e) { container.innerHTML = "Erro ao carregar dados."; }
+        }
+
+        function obter(obj, chave) {
+            const chavesDisponiveis = Object.keys(obj);
+            const chaveEncontrada = chavesDisponiveis.find(k => k.toLowerCase().trim() === chave.toLowerCase().trim());
+            let valor = chaveEncontrada ? obj[chaveEncontrada] : "---";
+            return valor === null || valor === undefined ? "---" : String(valor);
+        }
+
+        function calcularIdadeAnos(dataNasc) {
+            if (!dataNasc || dataNasc === "---") return 999;
+            const hoje = new Date();
+            const nascimento = new Date(dataNasc);
+            if (isNaN(nascimento)) return 999;
+            let idade = hoje.getFullYear() - nascimento.getFullYear();
+            const m = hoje.getMonth() - nascimento.getMonth();
+            if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate())) idade--;
+            return idade;
+        }
+
+        function formatarIdadeCompleta(dataNasc) {
+            const idade = calcularIdadeAnos(dataNasc);
+            if (idade === 999) return "---";
+            const d = new Date(dataNasc);
+            return `${idade} anos (${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()})`;
+        }
+
+        function ordenar(tipo) { ordemAtual = tipo; renderizar(); }
+
+        function gerarRelatorioBairro(nomeBairro) {
+            if (!nomeBairro) return;
+            const jovensDoBairro = inscritos.filter(p => obter(p, 'Bairro').toUpperCase().trim() === nomeBairro.toUpperCase());
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            jovensDoBairro.forEach((p, index) => {
+                if (index > 0) doc.addPage();
+                doc.setFontSize(18);
+                doc.text(`FICHA EJC 2026 - BAIRRO: ${nomeBairro}`, 105, 20, { align: "center" });
+                const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
+                if (foto !== FOTO_SEM_PERFIL) { try { doc.addImage(foto, 'JPEG', 150, 35, 40, 50); } catch(e) {} }
+                doc.setFontSize(12);
+                const campos = [
+                    ["NOME:", obter(p, 'Nome').toUpperCase()],
+                    ["CPF:", obter(p, 'CPF')],
+                    ["RG:", obter(p, 'RG')],
+                    ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))],
+                    ["WHATSAPP:", obter(p, 'whatsapp')],
+                    ["BAIRRO:", obter(p, 'Bairro')],
+                    ["CIDADE:", obter(p, 'Cidade')]
+                ];
+                let y = 45;
+                campos.forEach(campo => {
+                    doc.setFont(undefined, 'bold'); doc.text(campo[0], 20, y);
+                    doc.setFont(undefined, 'normal'); doc.text(String(campo[1]), 65, y);
+                    y += 12;
+                });
+            });
+            doc.save(`Fichas_EJC_${nomeBairro}.pdf`);
+            document.getElementById('selectBairros').value = "";
+        }
+
+        function renderizar() {
+            const container = document.getElementById('listaContainer');
+            const selectBairros = document.getElementById('selectBairros');
+            const termo = document.getElementById('searchBox').value.toLowerCase();
+
+            const bairrosUnicos = [...new Set(inscritos.map(p => obter(p, 'Bairro').toUpperCase().trim()))].sort();
+            const valorAtual = selectBairros.value;
+            selectBairros.innerHTML = '<option value="">Selecione um bairro para download...</option>';
+            bairrosUnicos.forEach(b => {
+                if (b && b !== "---") {
+                    const qtd = inscritos.filter(p => obter(p, 'Bairro').toUpperCase().trim() === b).length;
+                    selectBairros.innerHTML += `<option value="${b}">${b} (${qtd} jovens)</option>`;
+                }
+            });
+            selectBairros.value = valorAtual;
+
+            let filtrados = inscritos.filter(p => {
+                return obter(p, 'Nome').toLowerCase().includes(termo) ||
+                       obter(p, 'CPF').toLowerCase().includes(termo) ||
+                       obter(p, 'Bairro').toLowerCase().includes(termo);
+            });
+
+            filtrados.sort((a, b) => {
+                if (ordemAtual === 'nome') return obter(a, 'Nome').localeCompare(obter(b, 'Nome'));
+                return calcularIdadeAnos(obter(a, 'Idade')) - calcularIdadeAnos(obter(b, 'Idade'));
+            });
+
+            if (filtrados.length === 0) {
+                container.innerHTML = "<p style='text-align:center; color:#94a3b8;'>Nenhum resultado encontrado.</p>";
+                return;
+            }
+
+            container.innerHTML = "";
+            filtrados.forEach(p => {
+                const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
+                const botaoFoto = (foto === FOTO_SEM_PERFIL)
+                    ? `<span style="font-size:0.7rem; color:#94a3b8;">(SEM FOTO)</span>`
+                    : `<button class="btn btn-photo" onclick="verFoto(${p.row})"><i class="fas fa-camera"></i> FOTO</button>`;
+                container.innerHTML += `
+                    <div class="card-jovem">
+                        <div style="display:flex; justify-content:space-between; align-items:start;">
+                            <div>
+                                <b style="text-transform:uppercase; color:var(--dark);">${obter(p, 'Nome')}</b>
+                                <p style="font-size:0.85rem; color:#64748b; margin:5px 0;">CPF: ${obter(p, 'CPF')} | RG: ${obter(p, 'RG')} | <b>${obter(p, 'Bairro')}</b></p>
+                                <p style="font-size:0.8rem; color:var(--accent); font-weight:600;">${formatarIdadeCompleta(obter(p, 'Idade'))}</p>
+                            </div>
+                            <button class="btn-delete" onclick="deletarRegistro(${p.row})"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:10px; align-items:center;">
+                            <button class="btn-adm btn-adm-primary" style="margin:0; padding:10px; flex:1; font-size:0.75rem;" onclick="gerarFicha(${p.row})">FICHA PDF</button>
+                            <div style="flex:1; text-align:center;">${botaoFoto}</div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function verFoto(linha) {
+            const p = inscritos.find(i => i.row == linha);
+            const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
+            document.getElementById('imgExpandida').src = foto;
+            document.getElementById('modalFoto').style.display = 'flex';
+        }
+
+        async function deletarRegistro(linha) {
+            if (!confirm("Deseja mesmo apagar este inscrito?")) return;
+            try {
+                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: "delete", row: linha }) });
+                alert("Solicitação enviada. A lista será atualizada.");
+                carregarDados();
+            } catch(e) { alert("Erro ao deletar."); }
+        }
+
+        function gerarFicha(linha) {
+            const p = inscritos.find(i => i.row == linha);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(18);
+            doc.text("FICHA INDIVIDUAL - EJC 2026", 105, 20, { align: "center" });
+            const foto = (obter(p, 'foto (link)') && obter(p, 'foto (link)').length > 50) ? obter(p, 'foto (link)') : FOTO_SEM_PERFIL;
+            if (foto !== FOTO_SEM_PERFIL) { try { doc.addImage(foto, 'JPEG', 150, 35, 40, 50); } catch(e) {} }
+            doc.setFontSize(12);
+            const campos = [
+                ["NOME:", obter(p, 'Nome')],
+                ["CPF:", obter(p, 'CPF')],
+                ["RG:", obter(p, 'RG')],
+                ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))],
+                ["WHATSAPP:", obter(p, 'whatsapp')],
+                ["BAIRRO:", obter(p, 'Bairro')],
+                ["CIDADE:", obter(p, 'Cidade')]
+            ];
+            let y = 45;
+            campos.forEach(campo => {
+                doc.setFont(undefined, 'bold'); doc.text(campo[0], 20, y);
+                doc.setFont(undefined, 'normal'); doc.text(String(campo[1]), 65, y);
+                y += 12;
+            });
+            doc.save(`Ficha_${obter(p, 'Nome')}.pdf`);
+        }
+
+        function gerarRelatorioGeral() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+            doc.text("RELATÓRIO GERAL EJC 2026", 14, 15);
+            const linhas = inscritos.map(p => [
+                obter(p, 'Nome'), obter(p, 'CPF'), obter(p, 'RG'),
+                formatarIdadeCompleta(obter(p, 'Idade')), obter(p, 'whatsapp'), obter(p, 'Bairro')
+            ]);
+            doc.autoTable({
+                head: [["NOME", "CPF", "RG", "IDADE", "ZAP", "BAIRRO"]],
+                body: linhas, startY: 25, headStyles: { fillColor: [30, 41, 59] }
+            });
+            doc.save("Relatorio_EJC_2026.pdf");
+        }
+    </script>
+</body>
+</html>
