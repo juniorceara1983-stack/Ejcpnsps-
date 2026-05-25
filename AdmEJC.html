@@ -97,7 +97,7 @@
             </div>
         </div>
 
-        <input type="text" id="searchBox" placeholder="🔍 Pesquisar por nome, CPF ou bairro..." onkeyup="renderizar()">
+        <input type="text" id="searchBox" placeholder="🔍 Pesquisar por nome, documento ou bairro..." onkeyup="renderizar()">
 
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
             <button class="btn-outline" style="flex:1" onclick="ordenar('nome')"><i class="fas fa-sort-alpha-down"></i> Nome</button>
@@ -182,6 +182,17 @@
             return `${idade} anos (${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()})`;
         }
 
+        function obterDocumento(p) {
+            const tipo = obter(p, 'Tipo Documento');
+            const documento = obter(p, 'Documento');
+            if (documento !== "---") return `${tipo !== "---" ? `${tipo}: ` : ''}${documento}`;
+            const cpf = obter(p, 'CPF');
+            if (cpf !== "---") return `CPF: ${cpf}`;
+            const rg = obter(p, 'RG');
+            if (rg !== "---") return `RG: ${rg}`;
+            return "---";
+        }
+
         function ordenar(tipo) {
             ordemAtual = tipo;
             renderizar();
@@ -235,10 +246,10 @@
                 doc.setFont(undefined, 'bold');
                 const campos = [
                     ["NOME:", obter(p, 'Nome').toUpperCase()],
-                    ["CPF:", obter(p, 'CPF')],
-                    ["RG:", obter(p, 'RG')],
+                    ["DOCUMENTO:", obterDocumento(p)],
                     ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))],
                     ["WHATSAPP:", obter(p, 'whatsapp')],
+                    ["RUA:", obter(p, 'Rua')],
                     ["BAIRRO:", obter(p, 'Bairro')],
                     ["CIDADE:", obter(p, 'Cidade')],
                     ["ESTADO CIVIL:", obter(p, 'Estado Civil')],
@@ -247,7 +258,8 @@
                     ["MOVIMENTO:", obter(p, 'Participa de Movimento')],
                     ["QUAL MOV.:", obter(p, 'Qual Movimento')],
                     ["CONVIDADO POR:", obter(p, 'Convidado por')],
-                    ["ZAP CONVIDANTE:", obter(p, 'WhatsApp do Convidante')]
+                    ["ZAP CONVIDANTE:", obter(p, 'WhatsApp do Convidante')],
+                    ["PRESENÇA 3 DIAS:", obter(p, 'Declaração Presença')]
                 ];
 
                 let y = 45;
@@ -283,7 +295,7 @@
 
             let filtrados = inscritos.filter(p => {
                 return obter(p, 'Nome').toLowerCase().includes(termo) || 
-                       obter(p, 'CPF').toLowerCase().includes(termo) ||
+                       obterDocumento(p).toLowerCase().includes(termo) ||
                        obter(p, 'Bairro').toLowerCase().includes(termo);
             });
 
@@ -307,7 +319,7 @@
                         <div style="display:flex; justify-content:space-between; align-items:start;">
                             <div>
                                 <b style="text-transform:uppercase; color:var(--primary);">${obter(p, 'Nome')}</b>
-                                <p style="font-size:0.85rem; color:#64748b; margin:5px 0;">CPF: ${obter(p, 'CPF')} | RG: ${obter(p, 'RG')} | <b>${obter(p, 'Bairro')}</b></p>
+                                <p style="font-size:0.85rem; color:#64748b; margin:5px 0;">${obterDocumento(p)} | <b>${obter(p, 'Bairro')}</b></p>
                                 <p style="font-size:0.8rem; color:var(--accent); font-weight:600;">${formatarIdadeCompleta(obter(p, 'Idade'))}</p>
                             </div>
                             <button class="btn btn-delete" onclick="deletarRegistro(${p.row})"><i class="fas fa-trash-alt"></i></button>
@@ -350,10 +362,10 @@
             doc.setFont(undefined, 'bold');
             const campos = [
                 ["NOME:", obter(p, 'Nome')],
-                ["CPF:", obter(p, 'CPF')],
-                ["RG:", obter(p, 'RG')],
+                ["DOCUMENTO:", obterDocumento(p)],
                 ["IDADE:", formatarIdadeCompleta(obter(p, 'Idade'))],
                 ["WHATSAPP:", obter(p, 'whatsapp')],
+                ["RUA:", obter(p, 'Rua')],
                 ["BAIRRO:", obter(p, 'Bairro')],
                 ["CIDADE:", obter(p, 'Cidade')],
                 ["ESTADO CIVIL:", obter(p, 'Estado Civil')],
@@ -362,7 +374,8 @@
                 ["MOVIMENTO:", obter(p, 'Participa de Movimento')],
                 ["QUAL MOV.:", obter(p, 'Qual Movimento')],
                 ["CONVIDADO POR:", obter(p, 'Convidado por')],
-                ["ZAP CONVIDANTE:", obter(p, 'WhatsApp do Convidante')]
+                ["ZAP CONVIDANTE:", obter(p, 'WhatsApp do Convidante')],
+                ["PRESENÇA 3 DIAS:", obter(p, 'Declaração Presença')]
             ];
             let y = 45;
             campos.forEach(campo => {
@@ -379,19 +392,22 @@
             doc.text("RELATÓRIO GERAL EJC 2026", 14, 15);
             const linhas = inscritos.map(p => [
                 obter(p, 'Nome'),
-                obter(p, 'CPF'),
-                obter(p, 'RG'),
+                obterDocumento(p),
                 formatarIdadeCompleta(obter(p, 'Idade')),
                 obter(p, 'whatsapp'),
+                obter(p, 'Rua'),
                 obter(p, 'Bairro'),
                 obter(p, 'Estado Civil'),
                 obter(p, 'Grau de Instrução'),
                 obter(p, 'Trabalha Atualmente'),
                 obter(p, 'Participa de Movimento'),
-                obter(p, 'Convidado por')
+                obter(p, 'Qual Movimento'),
+                obter(p, 'Convidado por'),
+                obter(p, 'WhatsApp do Convidante'),
+                obter(p, 'Declaração Presença')
             ]);
             doc.autoTable({
-                head: [["NOME", "CPF", "RG", "IDADE", "ZAP", "BAIRRO", "ESTADO CIVIL", "INSTRUÇÃO", "TRABALHA", "MOVIMENTO", "CONVIDADO POR"]],
+                head: [["NOME", "DOCUMENTO", "IDADE", "ZAP", "RUA", "BAIRRO", "ESTADO CIVIL", "INSTRUÇÃO", "TRABALHA", "MOVIMENTO", "QUAL MOV.", "CONVIDADO POR", "ZAP CONVIDANTE", "PRESENÇA 3 DIAS"]],
                 body: linhas,
                 startY: 25,
                 headStyles: { fillColor: [30, 41, 59] }
